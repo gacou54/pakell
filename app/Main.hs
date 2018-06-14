@@ -1,6 +1,33 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Lib
+import Turtle
+----------------
+import Parsing ( parserMain
+               , parserVersion
+               , parserTODO
+               , parserTODO'
+               , parserFIXME
+               , parserNOTE
+               , parserREVIEW
+               , parserOPTIMIZE
+               , parserBUG )
+
 
 main :: IO ()
-main = someFunc
+main = do
+  cmd <- options "Options for pakell parsing tool" parser
+  cmd
+
+
+parser :: Parser (IO ())
+parser = parserMain <|>
+  parserVersion     <|>
+  parserTODO        <|>
+  parserTODO'       <|>
+  parserFIXME       <|>
+  parserNOTE        <|>
+  parserREVIEW      <|>
+  parserOPTIMIZE    <|>
+  parserBUG
+
