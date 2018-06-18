@@ -32,7 +32,7 @@ mainSubroutine = echo "TODO: should call parse dir and show keywords"
 -- ----------------------------------------------
 -- ---------
 parserTODO :: Parser (IO ())
-parserTODO = subcommand "todo" "Find TODO notes" $ pure $ wordParser $ "TODO"
+parserTODO = subcommand "todo" "Find TODO notes" $ pure $ mainSubroutine
 
 parserTODO' :: Parser (IO ())
 parserTODO' = subcommand "TODO" "Find TODO notes" $ pure $ mainSubroutine
@@ -76,7 +76,7 @@ verboseVersion = do
 -- ----------------------------------------------
 
 
-wordParser :: String -> IO ()
-wordParser s = do
-  echo "TODO"
+-- Read lines of given filename
+readLines :: String -> IO [String]
+readLines = fmap lines . readFile
 
