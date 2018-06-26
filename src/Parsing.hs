@@ -20,6 +20,8 @@ import Data.Text (strip, unpack)
 import Data.Version (showVersion)
 import Data.List (isInfixOf)
 import Turtle
+----------------
+import Utils
 
 
 -- Main routine
@@ -95,7 +97,11 @@ verboseVersion = do
   putStrLn $ showVersion version
 -- ----------------------------------------------
 
--- find'
+-- This is the main "find" function.
+-- It takes a String and a FilePath. The function looks
+-- in the file to find occurence of the given String.
+-- If there is, print them in a nice way
+-- -----------------------------------------------------
 find' :: String -> FilePath -> IO ()
 find' word p = do
   -- getting a list of all file name
@@ -118,14 +124,18 @@ find' word p = do
 
   -- replace print the result
   putStrLn $ replace word asciiWord s
+-- -----------------------------------------------------
 
 
 -- Read lines of given filename
+-- -----------------------------------------------------
 readLines :: String -> IO [String]
 readLines = fmap lines . readFile
+-- -----------------------------------------------------
 
 
 -- Find word in lines
+-- -----------------------------------------------------
 findWord :: String -> [(Integer, String)] -> [(Integer, String)]
 findWord word [nl]
   | isInfixOf word (snd nl) = [nl]
@@ -133,64 +143,5 @@ findWord word [nl]
 findWord word (nl:numAndLines)
   | isInfixOf word (snd nl) = [nl] ++ (findWord word numAndLines)
   | otherwise               = findWord word numAndLines
-
-
--- Puts the informations into a nicely formated string
-niceString :: [(Integer, String)] -> String
-niceString [nl]             = "  \x1b[38;5;3m"         ++
-                              (show $ fst nl)          ++
-                              " :  "                   ++
-                              "\x1b[0m"                ++
-                              trimWhiteSpace (snd nl)  ++ "\n"
-niceString (nl:numAndLines) = "  \x1b[38;5;3m"         ++
-                              (show $ fst nl)          ++
-                              " :  "                   ++
-                              "\x1b[0m"                ++
-                              trimWhiteSpace (snd nl)  ++ "\n" ++
-                              (niceString numAndLines)
-
-
--- Triming (strip) whitespace
--- -----------------------------------------------------
-trimWhiteSpace :: String -> String
-trimWhiteSpace [] = []
-trimWhiteSpace [x]
-  | x == ' '  = []
-  | otherwise = [x]
-trimWhiteSpace xs = trimWhiteSpaceSuffix $ trimWhiteSpacePrefix xs
-
-
-trimWhiteSpacePrefix :: String -> String
-trimWhiteSpacePrefix [] = []
-trimWhiteSpacePrefix [x]
-  | x == ' '  = []
-  | otherwise = [x]
-trimWhiteSpacePrefix xs
-  | head xs == ' '  = trimWhiteSpacePrefix $ tail xs
-  | otherwise       = xs
-
-
-trimWhiteSpaceSuffix :: String -> String
-trimWhiteSpaceSuffix [] = []
-trimWhiteSpaceSuffix [x]
-  | x == ' '        = []
-  | otherwise       = [x]
-trimWhiteSpaceSuffix xs
-  | last xs == ' '  = trimWhiteSpaceSuffix xs
-  | otherwise       = xs
--- -----------------------------------------------------
-
-
--- Convert FilePath to String
--- -----------------------------------------------------
-filePathToString :: FilePath -> String
-filePathToString = unpack . format fp
--- -----------------------------------------------------
-
--- Replace function
--- I found this in Data.String.Utils source code
--- -----------------------------------------------------
--- replace :: Eq a => [a] -> [a] -> [a] -> [a]
--- replace old new l = join new . split old $ l
 -- -----------------------------------------------------
 

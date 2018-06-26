@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cc9c5184d1f5ab55276be1a3ac71c3202d9dff70da9023a83c48ab2a6668a776
+-- hash: 70ee84d6b232c23ae54733513ba2168828f8912c03b32049ba27d3b7fbd2980f
 
 name:           pakell
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 library
   exposed-modules:
       Parsing
+      Utils
   other-modules:
       Paths_pakell
   hs-source-dirs:
