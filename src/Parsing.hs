@@ -146,8 +146,8 @@ niceString (nl:numAndLines) = "  \x1b[38;5;3m"         ++
                               (show $ fst nl)          ++
                               " :  "                   ++
                               "\x1b[0m"                ++
-                              trimWhiteSpace (snd nl)  ++
-                              (niceString numAndLines) ++ "\n"
+                              trimWhiteSpace (snd nl)  ++ "\n" ++
+                              (niceString numAndLines)
 
 
 -- Triming (strip) whitespace
