@@ -5,6 +5,7 @@ module Parsing
     , parserTODO
     , parserFIXME
     , parserNOTE
+    , parserTEMP
     , parserREVIEW
     , parserOPTIMIZE
     , parserBUG
@@ -14,6 +15,7 @@ module Parsing
 import Paths_pakell (version)
 ----------------
 import Prelude hiding (FilePath)
+import qualified Data.Text
 import Data.Version (showVersion)
 import Data.List (isInfixOf)
 import Turtle
@@ -33,37 +35,51 @@ mainSubroutine = echo "TODO: should call parse dir and show keywords"
 -- ----------------------------------------------
 -- ---------
 parserTODO :: Parser (IO ())
-parserTODO = subcommand "todo" "Find TODO notes" $ pure $ mainSubroutine
+parserTODO = fmap (find' "TODO")
+                 (subcommand "todo" "Find TODO notes"
+                      (argPath "path" "path of file or directory"))
 -- ---------
 
 -- ---------
 parserFIXME :: Parser (IO ())
-parserFIXME = subcommand "fixme" "Find FIME notes" $ pure $ mainSubroutine
+parserFIXME = fmap (find' "FIXME")
+                 (subcommand "fixme" "Find FIXME notes"
+                      (argPath "path" "path of file or directory"))
 -- ---------
 
 -- ---------
 parserNOTE :: Parser (IO ())
-parserNOTE = subcommand "note" "Find NOTE notes" $ pure $ mainSubroutine
+parserNOTE = fmap (find' "NOTE")
+                 (subcommand "note" "Find NOTE notes"
+                      (argPath "path" "path of file or directory"))
+-- ---------
+
+-- ---------
+parserTEMP :: Parser (IO ())
+parserTEMP = fmap (find' "TEMP")
+                 (subcommand "temp" "Find TEMP notes"
+                      (argPath "path" "path of file or directory"))
 -- ---------
 
 -- ---------
 parserREVIEW :: Parser (IO ())
-parserREVIEW = subcommand "review" "Find REVIEW notes" $ pure $ mainSubroutine
+parserREVIEW = fmap (find' "REVIEW")
+                 (subcommand "review" "Find REVIEW notes"
+                      (argPath "path" "path of file or directory"))
 -- ---------
 
 -- ---------
 parserOPTIMIZE :: Parser (IO ())
-parserOPTIMIZE = subcommand "optimize" "Find OPTIMIZE notes" $ pure $ mainSubroutine
+parserOPTIMIZE = fmap (find' "OPTIMIZE")
+                      (subcommand "optimize" "Find OPTIMIZE notes"
+                            (argPath "path" "path of file or directory"))
 -- ---------
 
 -- ---------
 parserBUG :: Parser (IO ())
-parserBUG = fmap print
+parserBUG = fmap (find' "BUG")
                  (subcommand "bug" "Find BUG notes"
                       (argPath "path" "path of file or directory"))
-
-findBUG :: Line -> IO ()
-findBUG p = print p
 -- ---------
 -- ----------------------------------------------
 
@@ -78,12 +94,31 @@ verboseVersion = do
   putStrLn $ showVersion version
 -- ----------------------------------------------
 
+-- find'
+find' :: String -> FilePath -> IO ()
+find' word p = do
+  -- getting a list of all file name
+  lines' <- readLines $ filePathToString p
+  -- getting a list of tuple, fst element is the number of line
+  -- and snd element is the line
+  let numberAndLines = zip [1..] lines'
+  -- take the "word" parameter and try to find it in lines.
+  -- check the function "numberAndLines" to understand what is happening
+  findAndPrint word numberAndLines
+
+
 -- Read lines of given filename
 readLines :: String -> IO [String]
 readLines = fmap lines . readFile
 
+
 -- Find and print lines
-findAndPrint :: String -> [String] -> IO ()
-findAndPrint word lines' = do
-  let xs =  filter (isInfixOf word) lines'
-  print xs
+findAndPrint :: String -> [(Integer, String)] -> IO ()
+findAndPrint word numberAndLines = do
+  let nl =  filter (isInfixOf word) (fmap snd numberAndLines)
+  print nl
+
+
+-- convert FilePath to String
+filePathToString :: FilePath -> String
+filePathToString = Data.Text.unpack . format fp
