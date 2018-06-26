@@ -6,7 +6,6 @@ import Turtle
 import Parsing ( parserMain
                , parserVersion
                , parserTODO
-               , parserTODO'
                , parserFIXME
                , parserNOTE
                , parserREVIEW
@@ -24,7 +23,6 @@ parser :: Parser (IO ())
 parser = parserMain <|>
   parserVersion     <|>
   parserTODO        <|>
-  parserTODO'       <|>
   parserFIXME       <|>
   parserNOTE        <|>
   parserREVIEW      <|>

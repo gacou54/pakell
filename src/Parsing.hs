@@ -3,7 +3,6 @@ module Parsing
     ( parserMain
     , parserVersion
     , parserTODO
-    , parserTODO'
     , parserFIXME
     , parserNOTE
     , parserREVIEW
@@ -14,7 +13,9 @@ module Parsing
 
 import Paths_pakell (version)
 ----------------
+import Prelude hiding (FilePath)
 import Data.Version (showVersion)
+import Data.List (isInfixOf)
 import Turtle
 
 
@@ -33,9 +34,6 @@ mainSubroutine = echo "TODO: should call parse dir and show keywords"
 -- ---------
 parserTODO :: Parser (IO ())
 parserTODO = subcommand "todo" "Find TODO notes" $ pure $ mainSubroutine
-
-parserTODO' :: Parser (IO ())
-parserTODO' = subcommand "TODO" "Find TODO notes" $ pure $ mainSubroutine
 -- ---------
 
 -- ---------
@@ -60,7 +58,12 @@ parserOPTIMIZE = subcommand "optimize" "Find OPTIMIZE notes" $ pure $ mainSubrou
 
 -- ---------
 parserBUG :: Parser (IO ())
-parserBUG = subcommand "bug" "Find BUG notes" $ pure $ mainSubroutine
+parserBUG = fmap print
+                 (subcommand "bug" "Find BUG notes"
+                      (argPath "path" "path of file or directory"))
+
+findBUG :: Line -> IO ()
+findBUG p = print p
 -- ---------
 -- ----------------------------------------------
 
@@ -71,12 +74,16 @@ parserVersion = subcommand "version" "Show version" $ pure $ verboseVersion
 
 verboseVersion :: IO ()
 verboseVersion = do
-  echo "Version information :"
+  echo "Version information:"
   putStrLn $ showVersion version
 -- ----------------------------------------------
-
 
 -- Read lines of given filename
 readLines :: String -> IO [String]
 readLines = fmap lines . readFile
 
+-- Find and print lines
+findAndPrint :: String -> [String] -> IO ()
+findAndPrint word lines' = do
+  let xs =  filter (isInfixOf word) lines'
+  print xs
