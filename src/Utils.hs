@@ -49,6 +49,7 @@ trimWhiteSpaceSuffix xs
 -- Puts the informations into a nicely formated string
 -- -----------------------------------------------------
 niceString :: [(Integer, String)] -> String
+niceString []               = []
 niceString [nl]             = "  \x1b[38;5;3m"         ++
                               (show $ fst nl)          ++
                               " :  "                   ++

@@ -97,6 +97,7 @@ verboseVersion = do
   putStrLn $ showVersion version
 -- ----------------------------------------------
 
+
 -- This is the main "find" function.
 -- It takes a String and a FilePath. The function looks
 -- in the file to find occurence of the given String.
@@ -137,6 +138,7 @@ readLines = fmap lines . readFile
 -- Find word in lines
 -- -----------------------------------------------------
 findWord :: String -> [(Integer, String)] -> [(Integer, String)]
+findWord _ [] = []
 findWord word [nl]
   | isInfixOf word (snd nl) = [nl]
   | otherwise               = []
