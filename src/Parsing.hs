@@ -102,23 +102,33 @@ find' word p = do
   -- getting a list of tuple, fst element is the number of line
   -- and snd element is the line
   let numberAndLines = zip [1..] lines'
+
   -- take the "word" parameter and try to find it in lines.
   -- check the function "numberAndLines" to understand what is happening
-  findAndPrint word numberAndLines
+
+  putStrLn $ "\n" ++ filePathToString p
+  putStrLn "-------------------"
+
+  print $ findWord word numberAndLines
 
 
 -- Read lines of given filename
 readLines :: String -> IO [String]
 readLines = fmap lines . readFile
 
+-- TODO
+-- Find word in lines
+findWord :: String -> [(Integer, String)] -> [(Integer, String)]
+findWord word [nl]                = do
+  if isInfixOf word (snd nl)
+     then [nl]
+     else []
 
--- Find and print lines
-findAndPrint :: String -> [(Integer, String)] -> IO ()
-findAndPrint word numberAndLines = do
-  let nl =  filter (isInfixOf word) (fmap snd numberAndLines)
-  print nl
+findWord word (nl:numberAndLines) = do
+  if isInfixOf word (snd nl)
+     then [nl] ++ (findWord word numberAndLines)
+     else findWord word numberAndLines
 
-
--- convert FilePath to String
+-- Convert FilePath to String
 filePathToString :: FilePath -> String
 filePathToString = Data.Text.unpack . format fp
