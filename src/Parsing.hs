@@ -15,7 +15,8 @@ module Parsing
 import Paths_pakell (version)
 ----------------
 import Prelude hiding (FilePath)
-import qualified Data.Text
+import Data.String.Utils (replace)
+import Data.Text (strip, unpack)
 import Data.Version (showVersion)
 import Data.List (isInfixOf)
 import Turtle
@@ -35,49 +36,49 @@ mainSubroutine = echo "TODO: should call parse dir and show keywords"
 -- ----------------------------------------------
 -- ---------
 parserTODO :: Parser (IO ())
-parserTODO = fmap (find' "TODO")
+parserTODO = fmap (find' " TODO")
                  (subcommand "todo" "Find TODO notes"
                       (argPath "path" "path of file or directory"))
 -- ---------
 
 -- ---------
 parserFIXME :: Parser (IO ())
-parserFIXME = fmap (find' "FIXME")
+parserFIXME = fmap (find' " FIXME")
                  (subcommand "fixme" "Find FIXME notes"
                       (argPath "path" "path of file or directory"))
 -- ---------
 
 -- ---------
 parserNOTE :: Parser (IO ())
-parserNOTE = fmap (find' "NOTE")
+parserNOTE = fmap (find' " NOTE")
                  (subcommand "note" "Find NOTE notes"
                       (argPath "path" "path of file or directory"))
 -- ---------
 
 -- ---------
 parserTEMP :: Parser (IO ())
-parserTEMP = fmap (find' "TEMP")
+parserTEMP = fmap (find' " TEMP")
                  (subcommand "temp" "Find TEMP notes"
                       (argPath "path" "path of file or directory"))
 -- ---------
 
 -- ---------
 parserREVIEW :: Parser (IO ())
-parserREVIEW = fmap (find' "REVIEW")
+parserREVIEW = fmap (find' " REVIEW")
                  (subcommand "review" "Find REVIEW notes"
                       (argPath "path" "path of file or directory"))
 -- ---------
 
 -- ---------
 parserOPTIMIZE :: Parser (IO ())
-parserOPTIMIZE = fmap (find' "OPTIMIZE")
+parserOPTIMIZE = fmap (find' " OPTIMIZE")
                       (subcommand "optimize" "Find OPTIMIZE notes"
                             (argPath "path" "path of file or directory"))
 -- ---------
 
 -- ---------
 parserBUG :: Parser (IO ())
-parserBUG = fmap (find' "BUG")
+parserBUG = fmap (find' " BUG")
                  (subcommand "bug" "Find BUG notes"
                       (argPath "path" "path of file or directory"))
 -- ---------
@@ -106,27 +107,90 @@ find' word p = do
   -- take the "word" parameter and try to find it in lines.
   -- check the function "numberAndLines" to understand what is happening
 
-  putStrLn $ "\n" ++ filePathToString p
+  putStrLn $ "\n\x1b[38;5;45m" ++ filePathToString p ++ "\x1b[0m"
   putStrLn "-------------------"
 
-  print $ findWord word numberAndLines
+  -- getting a nice string of all lines with the <keyword>
+  let s = niceString $ findWord word numberAndLines
+
+  -- word with ascii format for color and bold text
+  let asciiWord = "\x1b[1m\x1b[38;5;82m" ++ word ++ "\x1b[0m"
+
+  -- replace print the result
+  putStrLn $ replace word asciiWord s
 
 
 -- Read lines of given filename
 readLines :: String -> IO [String]
 readLines = fmap lines . readFile
 
--- TODO
+
 -- Find word in lines
 findWord :: String -> [(Integer, String)] -> [(Integer, String)]
 findWord word [nl]
   | isInfixOf word (snd nl) = [nl]
   | otherwise               = []
-findWord word (nl:numberAndLines)
-  | isInfixOf word (snd nl) = [nl] ++ (findWord word numberAndLines)
-  | otherwise               = findWord word numberAndLines
+findWord word (nl:numAndLines)
+  | isInfixOf word (snd nl) = [nl] ++ (findWord word numAndLines)
+  | otherwise               = findWord word numAndLines
+
+
+-- Puts the informations into a nicely formated string
+niceString :: [(Integer, String)] -> String
+niceString [nl]             = "  \x1b[38;5;3m"         ++
+                              (show $ fst nl)          ++
+                              " :  "                   ++
+                              "\x1b[0m"                ++
+                              trimWhiteSpace (snd nl)  ++ "\n"
+niceString (nl:numAndLines) = "  \x1b[38;5;3m"         ++
+                              (show $ fst nl)          ++
+                              " :  "                   ++
+                              "\x1b[0m"                ++
+                              trimWhiteSpace (snd nl)  ++
+                              (niceString numAndLines) ++ "\n"
+
+
+-- Triming (strip) whitespace
+-- -----------------------------------------------------
+trimWhiteSpace :: String -> String
+trimWhiteSpace [] = []
+trimWhiteSpace [x]
+  | x == ' '  = []
+  | otherwise = [x]
+trimWhiteSpace xs = trimWhiteSpaceSuffix $ trimWhiteSpacePrefix xs
+
+
+trimWhiteSpacePrefix :: String -> String
+trimWhiteSpacePrefix [] = []
+trimWhiteSpacePrefix [x]
+  | x == ' '  = []
+  | otherwise = [x]
+trimWhiteSpacePrefix xs
+  | head xs == ' '  = trimWhiteSpacePrefix $ tail xs
+  | otherwise       = xs
+
+
+trimWhiteSpaceSuffix :: String -> String
+trimWhiteSpaceSuffix [] = []
+trimWhiteSpaceSuffix [x]
+  | x == ' '        = []
+  | otherwise       = [x]
+trimWhiteSpaceSuffix xs
+  | last xs == ' '  = trimWhiteSpaceSuffix xs
+  | otherwise       = xs
+-- -----------------------------------------------------
+
 
 -- Convert FilePath to String
+-- -----------------------------------------------------
 filePathToString :: FilePath -> String
-filePathToString = Data.Text.unpack . format fp
+filePathToString = unpack . format fp
+-- -----------------------------------------------------
+
+-- Replace function
+-- I found this in Data.String.Utils source code
+-- -----------------------------------------------------
+-- replace :: Eq a => [a] -> [a] -> [a] -> [a]
+-- replace old new l = join new . split old $ l
+-- -----------------------------------------------------
 

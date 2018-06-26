@@ -21,12 +21,15 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
+- text
+- turtle
+- MissingH
 
 library:
   source-dirs: src
 
 executables:
-  pakell-exe:
+  pakell:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
