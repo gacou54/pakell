@@ -119,16 +119,14 @@ readLines = fmap lines . readFile
 -- TODO
 -- Find word in lines
 findWord :: String -> [(Integer, String)] -> [(Integer, String)]
-findWord word [nl]                = do
-  if isInfixOf word (snd nl)
-     then [nl]
-     else []
-
-findWord word (nl:numberAndLines) = do
-  if isInfixOf word (snd nl)
-     then [nl] ++ (findWord word numberAndLines)
-     else findWord word numberAndLines
+findWord word [nl]
+  | isInfixOf word (snd nl) = [nl]
+  | otherwise               = []
+findWord word (nl:numberAndLines)
+  | isInfixOf word (snd nl) = [nl] ++ (findWord word numberAndLines)
+  | otherwise               = findWord word numberAndLines
 
 -- Convert FilePath to String
 filePathToString :: FilePath -> String
 filePathToString = Data.Text.unpack . format fp
+
