@@ -24,6 +24,7 @@ dependencies:
 - text
 - turtle
 - MissingH
+- foldl
 
 library:
   source-dirs: src

@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 70ee84d6b232c23ae54733513ba2168828f8912c03b32049ba27d3b7fbd2980f
+-- hash: c5ccf4023403564f7af9e14ea23d5053358c4ac1dfed2ee8ef47b78256f1e4c0
 
 name:           pakell
 version:        0.1.0.0
@@ -35,6 +35,7 @@ library
   build-depends:
       MissingH
     , base >=4.7 && <5
+    , foldl
     , text
     , turtle
   default-language: Haskell2010
@@ -49,6 +50,7 @@ executable pakell
   build-depends:
       MissingH
     , base >=4.7 && <5
+    , foldl
     , pakell
     , text
     , turtle
@@ -65,6 +67,7 @@ test-suite pakell-test
   build-depends:
       MissingH
     , base >=4.7 && <5
+    , foldl
     , pakell
     , text
     , turtle

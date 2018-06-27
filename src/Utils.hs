@@ -2,10 +2,12 @@
 module Utils
     ( filePathToString
     , niceString
+    , shellToList
     ) where
 
 
 import Prelude hiding (FilePath)
+import qualified Control.Foldl as Foldl
 import Data.Text (strip, unpack)
 import Turtle
 
@@ -63,3 +65,8 @@ niceString (nl:numAndLines) = "  \x1b[38;5;3m"         ++
                               (niceString numAndLines)
 -- -----------------------------------------------------
 
+-- To list (form Shell)
+-- -----------------------------------------------------
+shellToList :: Shell a -> IO [a]
+shellToList s = fold s Foldl.list
+-- -----------------------------------------------------
