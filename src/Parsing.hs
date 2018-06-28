@@ -7,6 +7,7 @@ module Parsing
     , parserAdd
     , parserRemove
     , parserList
+    , parserClear
     ) where
 
 
@@ -46,7 +47,7 @@ parserTODO = fmap (find' " TODO")
 
 -- ---------
 parserLook :: Parser (IO ())
-parserLook = fmap (find' " TEMP")
+parserLook = fmap look
                   (subcommand "look" "Look for keywords notes"
                       (argPath "PATH" "path of file or directory"))
 -- ---------
@@ -65,11 +66,16 @@ parserRemove = fmap remove
                       (argText "WORD" "Keyword"))
 -- ---------
 
-
 -- ---------
 parserList :: Parser (IO ())
-parserList = (subcommand "list" "List stored keywords" (pure listWords))
+parserList = (subcommand "list" "List all stored keywords" (pure listWords))
 -- ---------
+--
+-- ---------
+parserClear :: Parser (IO ())
+parserClear = (subcommand "clear" "Clear all stored keywords" (pure clear))
+-- ---------
+
 -- ----------------------------------------------
 
 
@@ -78,7 +84,7 @@ parserList = (subcommand "list" "List stored keywords" (pure listWords))
 --
 -- Parameters
 -- -----------
--- String : keyword to add in config file
+-- Text : keyword to add in config file
 -- -----------------------------------------
 add :: Text -> IO ()
 add word = do
@@ -87,18 +93,25 @@ add word = do
   inConfig <- checkIfInConfig $ wordString
 
   case inConfig of
-    True  -> putStrLn ""
+    True  -> putStrLn "Already a keyword"
     False -> do
-      configPath <- getConfigPath
-      current    <- readFile $ fromString configPath
+      pakellConfig <- getConfigPath
+      current      <- readFile $ fromString pakellConfig
 
       -- delete old config file
-      rm $ fromString configPath
+      rm $ fromString pakellConfig
 
       -- create a new one
-      writeFile (fromString configPath) (current++wordString++"\n")
+      writeFile (fromString pakellConfig) (current++wordString++"\n")
 
-
+--
+-- remove function
+-- Remove a keyword to remove from config file
+--
+-- Parameters
+-- -----------
+-- Text : keyword to remove from config file
+-- -----------------------------------------
 remove :: Text -> IO ()
 remove word = do
   -- look if word is in config
@@ -106,32 +119,38 @@ remove word = do
   inConfig <- checkIfInConfig wordString
 
   case inConfig of
-    False -> putStrLn ""
+    False -> putStrLn "Not a stored keyword"
     True  -> do
-      configPath <- getConfigPath
+      pakellConfig <- getConfigPath
       -- list of String
-      currents   <- readLines configPath
+      currents     <- readLines pakellConfig
 
       -- get new list of keyword
       let news      = filter (\s -> s /= wordString) currents
 
       -- delete old config file
-      rm $ fromString configPath
+      rm $ fromString pakellConfig
 
       -- create a new one
-      writeFile (fromString configPath) (listToString news)
+      writeFile (fromString pakellConfig) (listToString news)
 
 
 
 listWords :: IO ()
 listWords = do
   -- getting path
-  path <- getConfigPath
+  pakellConfig <- getConfigPath
   -- getting file content
-  content <- readFile path
+  content <- readFile pakellConfig
   -- print it
-  putStrLn content
+  putStrLn $ init content
 
+
+clear :: IO()
+clear = do
+  -- get config path
+  pakellConfig <- getConfigPath
+  writeFile (fromString pakellConfig) "\n"
 
 -- ----------------------------------------------
 getConfigPath :: IO String
@@ -172,6 +191,58 @@ verboseVersion = do
   echo "Version information:"
   putStrLn $ showVersion version
 -- ----------------------------------------------
+
+-- look function
+-- look into specified path if one of the config keyword
+-- is there
+--
+-- Parameters
+-- -----------
+-- FilePath : File path of target file or directory
+-- -----------------------------------------------------
+look :: FilePath -> IO ()
+look p = do
+  print "toto"
+  -- statusPath <- stat p
+  -- lookWithStatus statusPath p
+
+
+
+-- lookWithStatus :: FileStatus -> String -> FilePath -> IO ()
+-- lookWithStatus statusPath p
+  -- | isRegularFile statusPath = do
+
+  --     -- This part is the one for a single file
+  --     -- ---------------------------------------
+  --     -- getting a list of all line in file
+  --     lines' <- readLines $ filePathToString p
+
+  --     printer p word lines'
+
+  -- | isDirectory statusPath = do
+
+  --     -- This part is the one for a directory
+  --     -- ---------------------------------------
+  --     -- getting a list of all file in directory
+  --     files <- shellToList $ lstree p
+
+  --     -- getting a list of all line in file
+  --     let filesString = [filePathToString f | f <- files]
+  --     print filesString
+  --     -- getting list of list of line (a list for each file)
+  --     -- let lines' = map readLines filesString
+  --     -- let lines' = [readLines f | f <- filesString]
+
+  --     -- let toto = head lines'
+
+  --     -- map (printer p word) lines'
+
+
+
+
+
+
+
 
 
 -- This is the main "find" function.

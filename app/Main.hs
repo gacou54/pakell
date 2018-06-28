@@ -10,7 +10,8 @@ import Parsing ( parserMain
                , parserLook
                , parserAdd
                , parserRemove
-               , parserList )
+               , parserList
+               , parserClear )
 
 -- TEMP : for testing
 -- TODO : test
@@ -49,5 +50,6 @@ parser = parserMain <|>
   parserLook        <|>
   parserAdd         <|>
   parserRemove      <|>
-  parserList
+  parserList        <|>
+  parserClear
 
