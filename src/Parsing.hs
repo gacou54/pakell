@@ -3,12 +3,10 @@ module Parsing
     ( parserMain
     , parserVersion
     , parserTODO
-    , parserFIXME
-    , parserNOTE
-    , parserTEMP
-    , parserREVIEW
-    , parserOPTIMIZE
+    , parserLook
     , parserAdd
+    , parserRemove
+    , parserList
     ) where
 
 
@@ -44,38 +42,10 @@ parserTODO = fmap (find' " TODO")
 -- ---------
 
 -- ---------
-parserFIXME :: Parser (IO ())
-parserFIXME = fmap (find' " FIXME")
-                 (subcommand "fixme" "Find FIXME notes"
+parserLook :: Parser (IO ())
+parserLook = fmap (find' " TEMP")
+                  (subcommand "look" "Look for keywords notes"
                       (argPath "path" "path of file or directory"))
--- ---------
-
--- ---------
-parserNOTE :: Parser (IO ())
-parserNOTE = fmap (find' " NOTE")
-                 (subcommand "note" "Find NOTE notes"
-                      (argPath "path" "path of file or directory"))
--- ---------
-
--- ---------
-parserTEMP :: Parser (IO ())
-parserTEMP = fmap (find' " TEMP")
-                 (subcommand "temp" "Find TEMP notes"
-                      (argPath "path" "path of file or directory"))
--- ---------
-
--- ---------
-parserREVIEW :: Parser (IO ())
-parserREVIEW = fmap (find' " REVIEW")
-                 (subcommand "review" "Find REVIEW notes"
-                      (argPath "path" "path of file or directory"))
--- ---------
-
--- ---------
-parserOPTIMIZE :: Parser (IO ())
-parserOPTIMIZE = fmap (find' " OPTIMIZE")
-                      (subcommand "optimize" "Find OPTIMIZE notes"
-                            (argPath "path" "path of file or directory"))
 -- ---------
 
 -- ---------
@@ -83,6 +53,19 @@ parserAdd :: Parser (IO ())
 parserAdd = fmap add
                  (subcommand "add" "Add a keyword to look at"
                       (argText "word" "Keyword"))
+-- ---------
+--
+-- ---------
+parserRemove :: Parser (IO ())
+parserRemove = fmap add
+                 (subcommand "add" "Add a keyword to look at"
+                      (argText "word" "Keyword"))
+-- ---------
+
+
+-- ---------
+parserList :: Parser (IO ())
+parserList = (subcommand "list" "List stored keywords" (pure listWords))
 -- ---------
 -- ----------------------------------------------
 
@@ -112,7 +95,17 @@ add word = do
       writeFile (fromString configPath) (current++(unpack word)++"\n")
 
 
+listWords :: IO ()
+listWords = do
+  -- getting path
+  path <- getConfigPath
+  -- getting file content
+  content <- readFile path
+  -- print it
+  putStrLn content
 
+
+-- ----------------------------------------------
 getConfigPath :: IO String
 getConfigPath = do
   homePath <- home
@@ -139,7 +132,7 @@ checkIfInConfig word = do
   case x of
     [] -> return False
     _  -> return True
-
+-- ----------------------------------------------
 
 -- Version
 -- ----------------------------------------------

@@ -7,11 +7,10 @@ import Utils   ( filePathToString )
 import Parsing ( parserMain
                , parserVersion
                , parserTODO
-               , parserFIXME
-               , parserNOTE
-               , parserREVIEW
-               , parserOPTIMIZE
-               , parserAdd )
+               , parserLook
+               , parserAdd
+               , parserRemove
+               , parserList )
 
 -- TEMP : for testing
 -- TODO : test
@@ -47,9 +46,8 @@ parser :: Parser (IO ())
 parser = parserMain <|>
   parserVersion     <|>
   parserTODO        <|>
-  parserFIXME       <|>
-  parserNOTE        <|>
-  parserREVIEW      <|>
-  parserOPTIMIZE    <|>
-  parserAdd
+  parserLook        <|>
+  parserAdd         <|>
+  parserRemove      <|>
+  parserList
 
