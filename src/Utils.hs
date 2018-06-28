@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Utils
     ( filePathToString
+    , listToString
     , niceString
     , shellToList
     ) where
@@ -16,6 +17,13 @@ import Turtle
 -- -----------------------------------------------------
 filePathToString :: FilePath -> String
 filePathToString = unpack . format fp
+-- -----------------------------------------------------
+
+-- List of String to big String
+-- -----------------------------------------------------
+listToString :: [String] -> String
+listToString [x] = x ++ "\n"
+listToString (x:xs) = x ++ "\n" ++ listToString xs
 -- -----------------------------------------------------
 
 -- Triming (strip) whitespace

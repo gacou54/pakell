@@ -19,7 +19,10 @@ import Data.Version (showVersion)
 import Data.List (isInfixOf)
 import Turtle
 ----------------
-import Utils (filePathToString, niceString, shellToList)
+import Utils ( filePathToString
+             , listToString
+             , niceString
+             , shellToList )
 
 
 -- Main routine
@@ -45,21 +48,21 @@ parserTODO = fmap (find' " TODO")
 parserLook :: Parser (IO ())
 parserLook = fmap (find' " TEMP")
                   (subcommand "look" "Look for keywords notes"
-                      (argPath "path" "path of file or directory"))
+                      (argPath "PATH" "path of file or directory"))
 -- ---------
 
 -- ---------
 parserAdd :: Parser (IO ())
 parserAdd = fmap add
-                 (subcommand "add" "Add a keyword to look at"
-                      (argText "word" "Keyword"))
+                 (subcommand "add" "Add a keyword"
+                      (argText "WORD" "Keyword"))
 -- ---------
 --
 -- ---------
 parserRemove :: Parser (IO ())
-parserRemove = fmap add
-                 (subcommand "add" "Add a keyword to look at"
-                      (argText "word" "Keyword"))
+parserRemove = fmap remove
+                 (subcommand "remove" "Remove a keyword"
+                      (argText "WORD" "Keyword"))
 -- ---------
 
 
@@ -80,10 +83,11 @@ parserList = (subcommand "list" "List stored keywords" (pure listWords))
 add :: Text -> IO ()
 add word = do
   -- look if word is in config
-  inConfig <- checkIfInConfig $ unpack word
+  let wordString = unpack word
+  inConfig <- checkIfInConfig $ wordString
 
   case inConfig of
-    True  -> print True
+    True  -> putStrLn ""
     False -> do
       configPath <- getConfigPath
       current    <- readFile $ fromString configPath
@@ -92,7 +96,31 @@ add word = do
       rm $ fromString configPath
 
       -- create a new one
-      writeFile (fromString configPath) (current++(unpack word)++"\n")
+      writeFile (fromString configPath) (current++wordString++"\n")
+
+
+remove :: Text -> IO ()
+remove word = do
+  -- look if word is in config
+  let wordString = unpack word
+  inConfig <- checkIfInConfig wordString
+
+  case inConfig of
+    False -> putStrLn ""
+    True  -> do
+      configPath <- getConfigPath
+      -- list of String
+      currents   <- readLines configPath
+
+      -- get new list of keyword
+      let news      = filter (\s -> s /= wordString) currents
+
+      -- delete old config file
+      rm $ fromString configPath
+
+      -- create a new one
+      writeFile (fromString configPath) (listToString news)
+
 
 
 listWords :: IO ()
