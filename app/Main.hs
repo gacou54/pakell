@@ -11,7 +11,7 @@ import Parsing ( parserMain
                , parserNOTE
                , parserREVIEW
                , parserOPTIMIZE
-               , parserBUG )
+               , parserAdd )
 
 -- TEMP : for testing
 -- TODO : test
@@ -51,5 +51,5 @@ parser = parserMain <|>
   parserNOTE        <|>
   parserREVIEW      <|>
   parserOPTIMIZE    <|>
-  parserBUG
+  parserAdd
 

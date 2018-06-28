@@ -8,7 +8,7 @@ module Parsing
     , parserTEMP
     , parserREVIEW
     , parserOPTIMIZE
-    , parserBUG
+    , parserAdd
     ) where
 
 
@@ -16,7 +16,7 @@ import Paths_pakell (version)
 ----------------
 import Prelude hiding (FilePath)
 import Data.String.Utils (replace)
-import Data.Text (strip, unpack)
+import Data.Text (strip, pack, unpack)
 import Data.Version (showVersion)
 import Data.List (isInfixOf)
 import Turtle
@@ -34,7 +34,7 @@ mainSubroutine = echo "TODO: should call parse dir and show keywords"
 -- ----------------------------------------------
 
 
--- Keywords command
+-- Commands
 -- ----------------------------------------------
 -- ---------
 parserTODO :: Parser (IO ())
@@ -79,12 +79,66 @@ parserOPTIMIZE = fmap (find' " OPTIMIZE")
 -- ---------
 
 -- ---------
-parserBUG :: Parser (IO ())
-parserBUG = fmap (find' " BUG")
-                 (subcommand "bug" "Find BUG notes"
-                      (argPath "path" "path of file or directory"))
+parserAdd :: Parser (IO ())
+parserAdd = fmap add
+                 (subcommand "add" "Add a keyword to look at"
+                      (argText "word" "Keyword"))
 -- ---------
 -- ----------------------------------------------
+
+
+-- add function
+-- Add a keyword into config file
+--
+-- Parameters
+-- -----------
+-- String : keyword to add in config file
+-- -----------------------------------------
+add :: Text -> IO ()
+add word = do
+  -- look if word is in config
+  inConfig <- checkIfInConfig $ unpack word
+
+  case inConfig of
+    True  -> print True
+    False -> do
+      configPath <- getConfigPath
+      current    <- readFile $ fromString configPath
+
+      -- delete old config file
+      rm $ fromString configPath
+
+      -- create a new one
+      writeFile (fromString configPath) (current++(unpack word)++"\n")
+
+
+
+getConfigPath :: IO String
+getConfigPath = do
+  homePath <- home
+  let pakellConfig = encodeString homePath ++ "/.config/pakell.conf"
+  return pakellConfig
+
+
+getKeyWords :: IO [String]
+getKeyWords = do
+  -- getting config path
+  pakellConfig <- getConfigPath
+
+  -- read each keayword (one per line)
+  keywords <- readLines pakellConfig
+  return keywords
+
+
+checkIfInConfig :: String -> IO Bool
+checkIfInConfig word = do
+  -- getting each keyword
+  keywords <- getKeyWords
+
+  let x = filter (\s -> s == word) keywords
+  case x of
+    [] -> return False
+    _  -> return True
 
 
 -- Version
