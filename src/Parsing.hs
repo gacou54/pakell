@@ -111,6 +111,9 @@ find' word p = do
   findWithStatus statusPath word p
 
 
+-- Find word
+-- It depends on the status file (directory or file)
+-- -----------------------------------------------------
 findWithStatus :: FileStatus -> String -> FilePath -> IO ()
 findWithStatus statusPath word p
   | isRegularFile statusPath = do
@@ -119,24 +122,8 @@ findWithStatus statusPath word p
       -- ---------------------------------------
       -- getting a list of all line in file
       lines' <- readLines $ filePathToString p
-      -- getting a list of tuple, fst element is the number of line
-      -- and snd element is the line
-      let numberAndLines = zip [1..] lines'
 
-      -- take the "word" parameter and try to find it in lines.
-      -- check the function "numberAndLines" to understand what is happening
-
-      putStrLn $ "\n\x1b[38;5;45m" ++ filePathToString p ++ "\x1b[0m"
-      putStrLn "-------------------"
-
-      -- getting a nice string of all lines with the <keyword>
-      let s = niceString $ findWord word numberAndLines
-
-      -- word with ascii format for color and bold text
-      let asciiWord = "\x1b[1m\x1b[38;5;82m" ++ word ++ "\x1b[0m"
-
-      -- replace print the result
-      putStrLn $ replace word asciiWord s
+      printer p word lines'
 
   | isDirectory statusPath = do
 
@@ -144,28 +131,43 @@ findWithStatus statusPath word p
       -- ---------------------------------------
       -- getting a list of all file in directory
       files <- shellToList $ lstree p
-      print files
-      -- TODO : allow this to work with a list of file
+
       -- getting a list of all line in file
-      lines' <- readLines $ filePathToString p
-      -- getting a list of tuple, fst element is the number of line
-      -- and snd element is the line
-      let numberAndLines = zip [1..] lines'
+      let filesString = [filePathToString f | f <- files]
+      print filesString
+      -- getting list of list of line (a list for each file)
+      -- let lines' = map readLines filesString
+      -- let lines' = [readLines f | f <- filesString]
 
-      -- take the "word" parameter and try to find it in lines.
-      -- check the function "numberAndLines" to understand what is happening
+      -- let toto = head lines'
 
-      putStrLn $ "\n\x1b[38;5;45m" ++ filePathToString p ++ "\x1b[0m"
-      putStrLn "-------------------"
+      -- map (printer p word) lines'
 
-      -- getting a nice string of all lines with the <keyword>
-      let s = niceString $ findWord word numberAndLines
+-- -----------------------------------------------------
 
-      -- word with ascii format for color and bold text
-      let asciiWord = "\x1b[1m\x1b[38;5;82m" ++ word ++ "\x1b[0m"
 
-      -- replace print the result
-      putStrLn $ replace word asciiWord s
+-- Printer
+-- -----------------------------------------------------
+printer :: FilePath -> String -> [String] -> IO ()
+printer p word lines' = do
+  -- getting a list of tuple, fst element is the number of line
+  -- and snd element is the line
+  let numberAndLines = zip [1..] lines'
+
+  -- take the "word" parameter and try to find it in lines.
+  -- check the function "numberAndLines" to understand what is happening
+
+  putStrLn $ "\n\x1b[38;5;45m" ++ filePathToString p ++ "\x1b[0m"
+  putStrLn "-------------------"
+
+  -- getting a nice string of all lines with the <keyword>
+  let s = niceString $ findWord word numberAndLines
+
+  -- word with ascii format for color and bold text
+  let asciiWord = "\x1b[1m\x1b[38;5;82m" ++ word ++ "\x1b[0m"
+
+  -- replace print the result
+  putStrLn $ replace word asciiWord s
 -- -----------------------------------------------------
 
 
