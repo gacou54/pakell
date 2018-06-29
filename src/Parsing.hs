@@ -98,6 +98,10 @@ add word = do
       pakellConfig <- getConfigPath
       current      <- readFile $ fromString pakellConfig
 
+      -- current' (head current == "")
+      --   True  -> tail current
+      --   False -> current
+
       -- delete old config file
       rm $ fromString pakellConfig
 
@@ -143,14 +147,16 @@ listWords = do
   -- getting file content
   content <- readFile pakellConfig
   -- print it
-  putStrLn $ init content
+  case content of
+    [] -> putStrLn ""
+    _  -> putStrLn $ init content
 
 
 clear :: IO()
 clear = do
   -- get config path
   pakellConfig <- getConfigPath
-  writeFile (fromString pakellConfig) "\n"
+  writeFile (fromString pakellConfig) ""
 
 -- ----------------------------------------------
 getConfigPath :: IO String
@@ -202,47 +208,35 @@ verboseVersion = do
 -- -----------------------------------------------------
 look :: FilePath -> IO ()
 look p = do
-  print "toto"
-  -- statusPath <- stat p
-  -- lookWithStatus statusPath p
+  keywords <- getKeyWords
+
+  status <- stat p
+  if (isRegularFile status)
+    then do
+      putStrLn $ "\n\x1b[38;5;45m" ++ filePathToString p ++ "\x1b[0m"
+      putStrLn "-------------------"
+
+      findWrapper keywords p
+
+    else if (isDirectory status)
+      then do
+        files <- shellToList $ lstree p
+
+        putStrLn $ "\n\x1b[38;5;45m" ++ filePathToString (head files) ++ "\x1b[0m"
+        putStrLn "-------------------"
+
+        mapM_ (findWrapper keywords) files
+
+    else do
+      putStrLn "Not a file nor a directory"
 
 
-
--- lookWithStatus :: FileStatus -> String -> FilePath -> IO ()
--- lookWithStatus statusPath p
-  -- | isRegularFile statusPath = do
-
-  --     -- This part is the one for a single file
-  --     -- ---------------------------------------
-  --     -- getting a list of all line in file
-  --     lines' <- readLines $ filePathToString p
-
-  --     printer p word lines'
-
-  -- | isDirectory statusPath = do
-
-  --     -- This part is the one for a directory
-  --     -- ---------------------------------------
-  --     -- getting a list of all file in directory
-  --     files <- shellToList $ lstree p
-
-  --     -- getting a list of all line in file
-  --     let filesString = [filePathToString f | f <- files]
-  --     print filesString
-  --     -- getting list of list of line (a list for each file)
-  --     -- let lines' = map readLines filesString
-  --     -- let lines' = [readLines f | f <- filesString]
-
-  --     -- let toto = head lines'
-
-  --     -- map (printer p word) lines'
-
-
-
-
-
-
-
+findWrapper :: [String] -> FilePath -> IO ()
+findWrapper [x] p    = do
+  find' x p
+findWrapper (x:xs) p = do
+  find' x p
+  findWrapper xs p
 
 
 -- This is the main "find" function.
@@ -252,43 +246,8 @@ look p = do
 -- -----------------------------------------------------
 find' :: String -> FilePath -> IO ()
 find' word p = do
-  -- find out path status
-  statusPath <-  stat p
-  findWithStatus statusPath word p
-
-
--- Find word
--- It depends on the status file (directory or file)
--- -----------------------------------------------------
-findWithStatus :: FileStatus -> String -> FilePath -> IO ()
-findWithStatus statusPath word p
-  | isRegularFile statusPath = do
-
-      -- This part is the one for a single file
-      -- ---------------------------------------
-      -- getting a list of all line in file
-      lines' <- readLines $ filePathToString p
-
-      printer p word lines'
-
-  | isDirectory statusPath = do
-
-      -- This part is the one for a directory
-      -- ---------------------------------------
-      -- getting a list of all file in directory
-      files <- shellToList $ lstree p
-
-      -- getting a list of all line in file
-      let filesString = [filePathToString f | f <- files]
-      print filesString
-      -- getting list of list of line (a list for each file)
-      -- let lines' = map readLines filesString
-      -- let lines' = [readLines f | f <- filesString]
-
-      -- let toto = head lines'
-
-      -- map (printer p word) lines'
-
+  lines' <- readLines $ filePathToString p
+  printer p word lines'
 -- -----------------------------------------------------
 
 
@@ -302,10 +261,6 @@ printer p word lines' = do
 
   -- take the "word" parameter and try to find it in lines.
   -- check the function "numberAndLines" to understand what is happening
-
-  putStrLn $ "\n\x1b[38;5;45m" ++ filePathToString p ++ "\x1b[0m"
-  putStrLn "-------------------"
-
   -- getting a nice string of all lines with the <keyword>
   let s = niceString $ findWord word numberAndLines
 
