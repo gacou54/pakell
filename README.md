@@ -13,11 +13,11 @@ instruction: https://docs.haskellstack.org/en/stable/README/#how-to-install
 
 Once stack is installed, you need to clone, build and install pakell :
 
-    ```bash
-    $ git clone https://github.com/gacou54/pakell.git
-    $ cd pakell
-    $ stack install
-    ```
+```bash
+$ git clone https://github.com/gacou54/pakell.git
+$ cd pakell
+$ stack install
+```
 
 Now pakell should be installed :)
 
@@ -27,9 +27,10 @@ NOTE : IN DEVELOPMENT.
        project. Once functional, this project will probably have to be reworked.
 
 
-TODO
-    * Add fonctionnalities
-    * Exception management: I developped this to work on my system.
+### TODO
+
+* Add fonctionnalities
+* Exception management: I developped this to work on my system.
         I don't know if pakell works well anywhere.
         For example I use a 256 color terminal, which is not the case for
         everybody.
