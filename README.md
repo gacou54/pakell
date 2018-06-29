@@ -21,10 +21,49 @@ $ stack install
 
 Now pakell should be installed :)
 
+## Utilisation
 
-NOTE : IN DEVELOPMENT.
-       This project has just been started. Also, this is my first Haskell
-       project. Once functional, this project will probably have to be reworked.
+pakell initialize a config file in .config directory, pakell.conf.
+It should be empty the first time. Keywords in there are the ones that
+pakell will look for when parsing file/directory.
+
+To add a keyword:
+
+```bash
+$ pakell add TODO
+```
+
+You just added a new keyword. You can look for it in a file or directory
+that way:
+
+
+```bash
+$ pakell look <directoryOrFilePath>
+```
+
+To remove a keyword:
+
+```bash
+$ pakell remove TODO
+```
+
+To list current keywords:
+
+```bash
+$ pakell list
+```
+
+To remove all keywords:
+
+```bash
+$ pakell clear
+```
+
+
+### NOTE
+IN DEVELOPMENT.
+This project has just been started. Also, this is my first Haskell
+project. Once functional, this project will probably have to be reworked.
 
 
 ### TODO
