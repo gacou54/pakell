@@ -233,8 +233,6 @@ look p = do
 -- -----------------------------------------------------
 find' :: FilePath -> IO ()
 find' p = do
-  putStrLn $ "\n\x1b[38;5;45m" ++ filePathToString p ++ "\x1b[0m"
-  putStrLn "-------------------"
 
   lines' <- readLines $ filePathToString p
   printer p lines'
@@ -254,19 +252,23 @@ printer p lines' = do
   -- line is valid or not
   boolList <- mapM okLine numberAndLines
 
+  when (foldl1 (||) boolList) ( putStrLn $ "\n\x1b[38;5;45m"  ++
+                                           filePathToString p ++
+                                           "\x1b[0m" )
+  when (foldl1 (||) boolList) ( putStrLn "-------------------" )
+
   -- getting keywords
   words <- getKeyWords
-  let word = head words  -- TEMP
 
-  -- check the function "numberAndLines" to understand what is happening
   -- getting a nice string of all lines with the <keyword>
   let s = niceString $ keep boolList numberAndLines
 
-  -- list of wor with ascii format for color and bold text
+   -- list of wor with ascii format for color and bold text
   let asciiWords = map asciiIt words
 
-  -- replace print the result
-  putStrLn $ replaceCombi s words asciiWords
+  when (foldl1 (||) boolList) (
+    -- replace print the result
+    putStrLn $ replaceCombi s words asciiWords )
 -- -----------------------------------------------------
 
 
