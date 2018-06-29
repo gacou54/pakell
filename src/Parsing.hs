@@ -38,6 +38,15 @@ mainSubroutine = echo "TODO: should call parse dir and show keywords"
 -- Commands
 -- ----------------------------------------------
 -- ---------
+-- TODO
+parserLookfor :: Parser (IO ())
+parserLookfor = fmap look
+                  (subcommand "look" "Look for keywords notes"
+                      (argPath "PATH" "path of file or directory"))
+-- ---------
+
+
+-- ---------
 parserLook :: Parser (IO ())
 parserLook = fmap look
                   (subcommand "look" "Look for keywords notes"
