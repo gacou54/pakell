@@ -2,7 +2,6 @@
 module Parsing
     ( parserMain
     , parserVersion
-    , parserTODO
     , parserLook
     , parserAdd
     , parserRemove
@@ -38,13 +37,6 @@ mainSubroutine = echo "TODO: should call parse dir and show keywords"
 
 -- Commands
 -- ----------------------------------------------
--- ---------
-parserTODO :: Parser (IO ())
-parserTODO = fmap (find' " TODO")
-                 (subcommand "todo" "Find TODO notes"
-                      (argPath "path" "path of file or directory"))
--- ---------
-
 -- ---------
 parserLook :: Parser (IO ())
 parserLook = fmap look
@@ -213,30 +205,16 @@ look p = do
   status <- stat p
   if (isRegularFile status)
     then do
-      putStrLn $ "\n\x1b[38;5;45m" ++ filePathToString p ++ "\x1b[0m"
-      putStrLn "-------------------"
-
-      findWrapper keywords p
+      find' p
 
     else if (isDirectory status)
       then do
         files <- shellToList $ lstree p
 
-        putStrLn $ "\n\x1b[38;5;45m" ++ filePathToString (head files) ++ "\x1b[0m"
-        putStrLn "-------------------"
-
-        mapM_ (findWrapper keywords) files
+        mapM_ find' files
 
     else do
       putStrLn "Not a file nor a directory"
-
-
-findWrapper :: [String] -> FilePath -> IO ()
-findWrapper [x] p    = do
-  find' x p
-findWrapper (x:xs) p = do
-  find' x p
-  findWrapper xs p
 
 
 -- This is the main "find" function.
@@ -244,31 +222,42 @@ findWrapper (x:xs) p = do
 -- in the file to find occurence of the given String.
 -- If there is, print them in a nice way
 -- -----------------------------------------------------
-find' :: String -> FilePath -> IO ()
-find' word p = do
+find' :: FilePath -> IO ()
+find' p = do
+  putStrLn $ "\n\x1b[38;5;45m" ++ filePathToString p ++ "\x1b[0m"
+  putStrLn "-------------------"
+
   lines' <- readLines $ filePathToString p
-  printer p word lines'
+  printer p lines'
 -- -----------------------------------------------------
 
 
 -- Printer
 -- -----------------------------------------------------
-printer :: FilePath -> String -> [String] -> IO ()
-printer p word lines' = do
+printer :: FilePath -> [String] -> IO ()
+printer p lines' = do
   -- getting a list of tuple, fst element is the number of line
   -- and snd element is the line
   let numberAndLines = zip [1..] lines'
 
-  -- take the "word" parameter and try to find it in lines.
+  -- now we have to confirm that lines are valid.
+  -- we create a boolean list that indicates that
+  -- line is valid or not
+  boolList <- mapM okLine numberAndLines
+
+  -- getting keywords
+  words <- getKeyWords
+  let word = head words  -- TEMP
+
   -- check the function "numberAndLines" to understand what is happening
   -- getting a nice string of all lines with the <keyword>
-  let s = niceString $ findWord word numberAndLines
+  let s = niceString $ keep boolList numberAndLines
 
-  -- word with ascii format for color and bold text
-  let asciiWord = "\x1b[1m\x1b[38;5;82m" ++ word ++ "\x1b[0m"
+  -- list of wor with ascii format for color and bold text
+  let asciiWords = map asciiIt words
 
   -- replace print the result
-  putStrLn $ replace word asciiWord s
+  putStrLn $ replaceCombi s words asciiWords
 -- -----------------------------------------------------
 
 
@@ -278,6 +267,38 @@ readLines :: String -> IO [String]
 readLines = fmap lines . readFile
 -- -----------------------------------------------------
 
+-- Check if a keyword is in line
+-- -----------------------------------------------------
+okLine :: (Integer, String) -> IO Bool
+okLine nl = do
+  words <- getKeyWords
+  return $ foldl1 (||) $ fmap (flip (isInfixOf) (snd nl)) words
+-- -----------------------------------------------------
+
+-- Add or not to an the list of lines that will be print
+-- -----------------------------------------------------
+keep :: [Bool] -> [(Integer, String)] -> [(Integer, String)]
+keep [b] [nl]
+  | b == True = [nl]
+  | otherwise = []
+keep (b:bs) (nl:nls)
+  | b == True = [nl] ++ keep bs nls
+  | otherwise = keep bs nls
+-- -----------------------------------------------------
+
+-- ascii it, change the display format
+-- -----------------------------------------------------
+asciiIt :: String -> String
+asciiIt []   = []
+asciiIt word = "\x1b[1m\x1b[38;5;82m" ++ word ++ "\x1b[0m"
+-- -----------------------------------------------------
+
+-- replace with combinaison
+-- -----------------------------------------------------
+replaceCombi :: String -> [String] -> [String] -> String
+replaceCombi bigString [w] [a] = replace w a bigString
+replaceCombi bigString (w:ws) (a:as) = replaceCombi (replace w a bigString) ws as
+-- -----------------------------------------------------
 
 -- Find word in lines
 -- -----------------------------------------------------

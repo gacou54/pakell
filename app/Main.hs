@@ -6,7 +6,6 @@ import Turtle
 import Utils   ( filePathToString )
 import Parsing ( parserMain
                , parserVersion
-               , parserTODO
                , parserLook
                , parserAdd
                , parserRemove
@@ -46,7 +45,6 @@ main = do
 parser :: Parser (IO ())
 parser = parserMain <|>
   parserVersion     <|>
-  parserTODO        <|>
   parserLook        <|>
   parserAdd         <|>
   parserRemove      <|>
