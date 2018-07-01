@@ -31,7 +31,9 @@ parserMain :: Parser (IO ())
 parserMain = pure mainSubroutine
 
 mainSubroutine :: IO ()
-mainSubroutine = echo "TODO: should call parse dir and show keywords"
+mainSubroutine = do
+  currenPath <- pwd
+  look currenPath
 -- ----------------------------------------------
 
 
@@ -218,12 +220,43 @@ look p = do
 
     else if (isDirectory status)
       then do
-        files <- shellToList $ lstree p
+        paths <- shellToList $ ls p
 
-        mapM_ find' files
+        -- getting all status
+        filesStatus <- mapM stat paths
+
+        -- is files
+        let isFiles = map isRegularFile filesStatus
+
+        -- is directories
+        let isDirs  = map isDirectory filesStatus
+
+        -- only files should be marked as True here
+        mapM_ find' $ keep isFiles paths
+
+        -- FIXME : add an option to recursivly parse directories
+        -- (just uncomment below)
+        -- only directories should be markes as True here
+        -- mapM_ look $ keep isDirs paths
 
     else do
       putStrLn "Not a file nor a directory"
+
+
+-- keep or not element in list with an associated list of boolean
+-- -----------------------------------------------------
+keep :: [Bool] -> [a] -> [a]
+keep [] [x] = error $ "Error: list and associated list of boolean " ++
+                      "are not the same length"
+keep [b] [] = error $ "Error: list and associated list of boolean " ++
+                      "are not the same length"
+keep [b] [x]
+  | b         = [x]
+  | otherwise = []
+keep (b:bs) (x:xs)
+  | b         = [x] ++ keep bs xs
+  | otherwise = keep bs xs
+-- -----------------------------------------------------
 
 
 -- This is the main "find" function.
@@ -261,7 +294,7 @@ printer p lines' = do
   words <- getKeyWords
 
   -- getting a nice string of all lines with the <keyword>
-  let s = niceString $ keep boolList numberAndLines
+  let s = niceString $ keepLines boolList numberAndLines
 
    -- list of wor with ascii format for color and bold text
   let asciiWords = map asciiIt words
@@ -288,13 +321,13 @@ okLine nl = do
 
 -- Add or not to an the list of lines that will be print
 -- -----------------------------------------------------
-keep :: [Bool] -> [(Integer, String)] -> [(Integer, String)]
-keep [b] [nl]
+keepLines :: [Bool] -> [(Integer, String)] -> [(Integer, String)]
+keepLines [b] [nl]
   | b == True = [nl]
   | otherwise = []
-keep (b:bs) (nl:nls)
-  | b == True = [nl] ++ keep bs nls
-  | otherwise = keep bs nls
+keepLines (b:bs) (nl:nls)
+  | b == True = [nl] ++ keepLines bs nls
+  | otherwise = keepLines bs nls
 -- -----------------------------------------------------
 
 -- ascii it, change the display format
