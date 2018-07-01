@@ -21,7 +21,7 @@ $ stack install
 
 Now pakell should be installed :)
 
-## Utilisation
+## Utilization
 
 pakell initialize a config file in .config directory, pakell.conf.
 It should be empty the first time. Keywords in there are the ones that
