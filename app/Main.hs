@@ -5,12 +5,14 @@ import Turtle
 ----------------
 import Utils   ( filePathToString )
 import Parsing ( parserMain
-               , parserVersion
                , parserLook
+               , parserLookfor
                , parserAdd
                , parserRemove
                , parserList
-               , parserClear )
+               , parserClear
+               , parserVersion
+               , parserL )
 
 -- TEMP : for testing
 -- TODO : test
@@ -44,10 +46,12 @@ main = do
 
 parser :: Parser (IO ())
 parser = parserMain <|>
-  parserVersion     <|>
   parserLook        <|>
+  parserLookfor     <|>
   parserAdd         <|>
   parserRemove      <|>
   parserList        <|>
-  parserClear
+  parserClear       <|>
+  parserVersion     <|>
+  parserL
 

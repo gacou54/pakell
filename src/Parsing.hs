@@ -1,12 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Parsing
     ( parserMain
-    , parserVersion
     , parserLook
+    , parserLookfor
     , parserAdd
     , parserRemove
     , parserList
     , parserClear
+    , parserVersion
+    , parserL
     ) where
 
 
@@ -42,11 +44,20 @@ mainSubroutine = do
 -- ---------
 -- TODO
 parserLookfor :: Parser (IO ())
-parserLookfor = fmap look
-                  (subcommand "look" "Look for keywords notes"
-                      (argPath "PATH" "path of file or directory"))
+parserLookfor = fmap lookfor
+                  (subcommand "lookfor" "Look for specified word" argLookfor)
+
+argLookfor :: Parser (Maybe FilePath, Text)
+argLookfor = (,) <$> optional (optPath "path" 'p' "Path to look in")
+                 <*> (argText "Keyword" "Look for the keyword")
 -- ---------
 
+-- ---------
+parserL :: Parser (IO ())
+parserL = fmap look
+                (subcommand "l" "Look for keywords notes (alias for look command)"
+                  (argPath "PATH" "path of file or directory"))
+-- ---------
 
 -- ---------
 parserLook :: Parser (IO ())
@@ -200,6 +211,17 @@ verboseVersion = do
   echo "Version information:"
   putStrLn $ showVersion version
 -- ----------------------------------------------
+--
+-- lookfor function
+-- look for a specified keyword
+-- -----------------------------------------------------
+lookfor :: (Maybe FilePath, Text) -> IO ()
+lookfor (Nothing, text) = do -- case with no specified path
+  putStrLn "Not implemented yet"
+lookfor (Just p, text) = do
+  putStrLn "Not implemented yet"
+-- -----------------------------------------------------
+
 
 -- look function
 -- look into specified path if one of the config keyword
