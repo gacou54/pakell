@@ -40,6 +40,17 @@ that way:
 ```bash
 $ pakell look <directoryOrFilePath>
 ```
+or (l is an alias for look command)
+
+```bash
+$ pakell l <directoryOrFilePath>
+```
+
+or to look in current directory
+
+```bash
+$ pakell
+```
 
 To remove a keyword:
 
@@ -59,18 +70,22 @@ To remove all keywords:
 $ pakell clear
 ```
 
+## Example
+
+![basic example](/imgsExample/basicExample.png)
 
 ### NOTE
 IN DEVELOPMENT.
-This project has just been started. Also, this is my first Haskell
+* This project has just been started. Also, this is my first Haskell
 project. Once functional, this project will probably have to be reworked.
 
 
 ### TODO
 
 * Add fonctionnalities
+* Correct error about file that can't be open
 * Exception management: I developped this to work on my system.
-        I don't know if pakell works well anywhere.
+        I don't know if pakell works well everywhere.
         For example I use a 256 color terminal, which is not the case for
         everybody.
 

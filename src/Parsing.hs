@@ -42,7 +42,7 @@ mainSubroutine = do
 -- Commands
 -- ----------------------------------------------
 -- ---------
--- TODO
+-- TODO : lookfor function
 parserLookfor :: Parser (IO ())
 parserLookfor = fmap lookfor
                   (subcommand "lookfor" "Look for specified word" argLookfor)
