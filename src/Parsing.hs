@@ -15,6 +15,8 @@ module Parsing
 import Paths_pakell (version)
 ----------------
 import Prelude hiding (FilePath)
+import qualified GHC.IO
+import System.IO hiding (FilePath)
 import Data.String.Utils (replace)
 import Data.Text (strip, pack, unpack)
 import Data.Version (showVersion)
@@ -238,7 +240,17 @@ look p = do
   status <- stat p
   if (isRegularFile status)
     then do
-      find' p
+      -- FIXME : some file cannot be read,
+      -- I tried something but not seems to work
+
+      -- getting encoding
+      let s    = filePathToString p
+      h        <- openFile s ReadMode
+      encoding <- hGetEncoding h
+
+      case encoding of
+        Just utf8 -> find' p
+        _         -> print ()
 
     else if (isDirectory status)
       then do
@@ -307,23 +319,26 @@ printer p lines' = do
   -- line is valid or not
   boolList <- mapM okLine numberAndLines
 
-  when (foldl1 (||) boolList) ( putStrLn $ "\n\x1b[38;5;45m"  ++
+  -- case where boolList is an empty list
+  if boolList == [] then return () else do
+
+    when (foldl1 (||) boolList) ( putStrLn $ "\n\x1b[38;5;45m"  ++
                                            filePathToString p ++
                                            "\x1b[0m" )
-  when (foldl1 (||) boolList) ( putStrLn "-------------------" )
+    when (foldl1 (||) boolList) ( putStrLn "-------------------" )
 
-  -- getting keywords
-  words <- getKeyWords
+    -- getting keywords
+    words <- getKeyWords
 
-  -- getting a nice string of all lines with the <keyword>
-  let s = niceString $ keepLines boolList numberAndLines
+    -- getting a nice string of all lines with the <keyword>
+    let s = niceString $ keepLines boolList numberAndLines
 
-   -- list of wor with ascii format for color and bold text
-  let asciiWords = map asciiIt words
+     -- list of wor with ascii format for color and bold text
+    let asciiWords = map asciiIt words
 
-  when (foldl1 (||) boolList) (
-    -- replace print the result
-    putStrLn $ replaceCombi s words asciiWords )
+    when (foldl1 (||) boolList) (
+      -- replace print the result
+      putStrLn $ replaceCombi s words asciiWords )
 -- -----------------------------------------------------
 
 
