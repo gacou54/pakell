@@ -9,6 +9,8 @@ module Parsing
     , parserClear
     , parserVersion
     , parserL
+    , parserLf
+    , parserLs
     ) where
 
 
@@ -46,7 +48,6 @@ mainSubroutine = do
 -- Commands
 -- ----------------------------------------------
 -- ---------
--- TODO : lookfor function
 parserLookfor :: Parser (IO ())
 parserLookfor = fmap lookfor
                   (subcommand "lookfor" "Look for specified word" argLookfor)
@@ -55,12 +56,11 @@ argLookfor :: Parser (Maybe FilePath, Text)
 argLookfor = (,) <$> optional (optPath "path" 'p' "Path to look in")
                  <*> (argText "Keyword" "Look for the keyword")
 -- ---------
-
+--
 -- ---------
-parserL :: Parser (IO ())
-parserL = fmap (look Nothing)
-                (subcommand "l" "Look for keywords notes (alias for look command)"
-                  (argPath "PATH" "path of file or directory"))
+parserLf :: Parser (IO ())
+parserLf = fmap lookfor
+                  (subcommand "lf" "Alias for look command" argLookfor)
 -- ---------
 
 -- ---------
@@ -69,6 +69,14 @@ parserLook = fmap (look Nothing )
                   (subcommand "look" "Look for keywords notes"
                       (argPath "PATH" "path of file or directory"))
 -- ---------
+
+-- ---------
+parserL :: Parser (IO ())
+parserL = fmap (look Nothing)
+                (subcommand "l" "Alias for look command"
+                  (argPath "PATH" "path of file or directory"))
+-- ---------
+
 
 -- ---------
 parserAdd :: Parser (IO ())
@@ -88,7 +96,12 @@ parserRemove = fmap remove
 parserList :: Parser (IO ())
 parserList = (subcommand "list" "List all stored keywords" (pure listWords))
 -- ---------
---
+
+-- ---------
+parserLs :: Parser (IO ())
+parserLs = (subcommand "ls" "Alias for list command" (pure listWords))
+-- ---------
+
 -- ---------
 parserClear :: Parser (IO ())
 parserClear = (subcommand "clear" "Clear all stored keywords" (pure clear))

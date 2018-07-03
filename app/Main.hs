@@ -12,7 +12,9 @@ import Parsing ( parserMain
                , parserList
                , parserClear
                , parserVersion
-               , parserL )
+               , parserL
+               , parserLf
+               , parserLs )
 
 -- TEMP : for testing
 -- TODO : test
@@ -53,5 +55,7 @@ parser = parserMain <|>
   parserList        <|>
   parserClear       <|>
   parserVersion     <|>
-  parserL
+  parserL           <|>
+  parserLf          <|>
+  parserLs
 
