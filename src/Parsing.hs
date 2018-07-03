@@ -60,7 +60,7 @@ argLookfor = (,) <$> optional (optPath "path" 'p' "Path to look in")
 -- ---------
 parserLf :: Parser (IO ())
 parserLf = fmap lookfor
-                  (subcommand "lf" "Alias for look command" argLookfor)
+                  (subcommand "lf" "Alias for lookfor command" argLookfor)
 -- ---------
 
 -- ---------
