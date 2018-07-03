@@ -17,6 +17,7 @@ import Paths_pakell (version)
 import Prelude hiding (FilePath)
 import qualified GHC.IO
 import System.IO hiding (FilePath)
+import Data.Maybe (fromJust)
 import Data.String.Utils (replace)
 import Data.Text (strip, pack, unpack)
 import Data.Version (showVersion)
@@ -37,7 +38,8 @@ parserMain = pure mainSubroutine
 mainSubroutine :: IO ()
 mainSubroutine = do
   currenPath <- pwd
-  look currenPath
+  keywords   <- getKeyWords
+  look (Just keywords) currenPath
 -- ----------------------------------------------
 
 
@@ -56,14 +58,14 @@ argLookfor = (,) <$> optional (optPath "path" 'p' "Path to look in")
 
 -- ---------
 parserL :: Parser (IO ())
-parserL = fmap look
+parserL = fmap (look Nothing)
                 (subcommand "l" "Look for keywords notes (alias for look command)"
                   (argPath "PATH" "path of file or directory"))
 -- ---------
 
 -- ---------
 parserLook :: Parser (IO ())
-parserLook = fmap look
+parserLook = fmap (look Nothing )
                   (subcommand "look" "Look for keywords notes"
                       (argPath "PATH" "path of file or directory"))
 -- ---------
@@ -219,9 +221,21 @@ verboseVersion = do
 -- -----------------------------------------------------
 lookfor :: (Maybe FilePath, Text) -> IO ()
 lookfor (Nothing, text) = do -- case with no specified path
-  putStrLn "Not implemented yet"
+  -- getting string from text
+  let s = unpack text
+
+  -- getitng current path
+  currenPath <- pwd
+
+  -- look
+  look (Just [s]) currenPath
+
 lookfor (Just p, text) = do
-  putStrLn "Not implemented yet"
+  -- getting string from text
+  let s = unpack text
+
+  -- look
+  look (Just [s]) p
 -- -----------------------------------------------------
 
 
@@ -233,8 +247,8 @@ lookfor (Just p, text) = do
 -- -----------
 -- FilePath : File path of target file or directory
 -- -----------------------------------------------------
-look :: FilePath -> IO ()
-look p = do
+look :: Maybe [String] -> FilePath -> IO ()
+look Nothing p = do
   keywords <- getKeyWords
 
   status <- stat p
@@ -249,7 +263,7 @@ look p = do
       encoding <- hGetEncoding h
 
       case encoding of
-        Just utf8 -> find' p
+        Just utf8 -> find' keywords p
         _         -> print ()
 
     else if (isDirectory status)
@@ -266,7 +280,7 @@ look p = do
         let isDirs  = map isDirectory filesStatus
 
         -- only files should be marked as True here
-        mapM_ find' $ keep isFiles paths
+        mapM_ (find'  keywords) $ keep isFiles paths
 
         -- FIXME : add an option to recursivly parse directories
         -- (just uncomment below)
@@ -275,6 +289,52 @@ look p = do
 
     else do
       putStrLn "Not a file nor a directory"
+
+look word p = do
+  -- getting word
+  let keyword = fromJust word
+
+  -- getting status
+  status <- stat p
+
+  if (isRegularFile status)
+    then do
+      -- FIXME : some file cannot be read,
+      -- I tried something but not seems to work
+
+      -- getting encoding
+      let s    = filePathToString p
+      h        <- openFile s ReadMode
+      encoding <- hGetEncoding h
+
+      case encoding of
+        Just utf8 -> find' keyword p
+        _         -> return ()
+
+    else if (isDirectory status)
+      then do
+        paths <- shellToList $ ls p
+
+        -- getting all status
+        filesStatus <- mapM stat paths
+
+        -- is files
+        let isFiles = map isRegularFile filesStatus
+
+        -- is directories
+        let isDirs  = map isDirectory filesStatus
+
+        -- only files should be marked as True here
+        mapM_ (find' keyword) $ keep isFiles paths
+
+        -- FIXME : add an option to recursivly parse directories
+        -- (just uncomment below)
+        -- only directories should be markes as True here
+        -- mapM_ look $ keep isDirs paths
+
+    else do
+      putStrLn "Not a file nor a directory"
+
 
 
 -- keep or not element in list with an associated list of boolean
@@ -298,18 +358,19 @@ keep (b:bs) (x:xs)
 -- in the file to find occurence of the given String.
 -- If there is, print them in a nice way
 -- -----------------------------------------------------
-find' :: FilePath -> IO ()
-find' p = do
+find' :: [String] -> FilePath -> IO ()
+find' [] p = return ()
+find' keywords p = do
 
   lines' <- readLines $ filePathToString p
-  printer p lines'
+  printer keywords p lines'
 -- -----------------------------------------------------
 
 
 -- Printer
 -- -----------------------------------------------------
-printer :: FilePath -> [String] -> IO ()
-printer p lines' = do
+printer :: [String] -> FilePath -> [String] -> IO ()
+printer words p lines' = do
   -- getting a list of tuple, fst element is the number of line
   -- and snd element is the line
   let numberAndLines = zip [1..] lines'
@@ -317,28 +378,23 @@ printer p lines' = do
   -- now we have to confirm that lines are valid.
   -- we create a boolean list that indicates that
   -- line is valid or not
-  boolList <- mapM okLine numberAndLines
+  boolList <- mapM (okLine words) numberAndLines
 
   -- case where boolList is an empty list
-  if boolList == [] then return () else do
+  when (foldl1 (||) boolList) ( putStrLn $ "\n\x1b[38;5;45m"  ++
+                                         filePathToString p ++
+                                         "\x1b[0m" )
+  when (foldl1 (||) boolList) ( putStrLn "-------------------" )
 
-    when (foldl1 (||) boolList) ( putStrLn $ "\n\x1b[38;5;45m"  ++
-                                           filePathToString p ++
-                                           "\x1b[0m" )
-    when (foldl1 (||) boolList) ( putStrLn "-------------------" )
+  -- getting a nice string of all lines with the <keyword>
+  let s = niceString $ keepLines boolList numberAndLines
 
-    -- getting keywords
-    words <- getKeyWords
+   -- list of wor with ascii format for color and bold text
+  let asciiWords = map asciiIt words
 
-    -- getting a nice string of all lines with the <keyword>
-    let s = niceString $ keepLines boolList numberAndLines
-
-     -- list of wor with ascii format for color and bold text
-    let asciiWords = map asciiIt words
-
-    when (foldl1 (||) boolList) (
-      -- replace print the result
-      putStrLn $ replaceCombi s words asciiWords )
+  when (foldl1 (||) boolList) (
+    -- replace print the result
+    putStrLn $ replaceCombi s words asciiWords )
 -- -----------------------------------------------------
 
 
@@ -348,12 +404,11 @@ readLines :: String -> IO [String]
 readLines = fmap lines . readFile
 -- -----------------------------------------------------
 
--- Check if a keyword is in line
+-- Check if keywords are in line
 -- -----------------------------------------------------
-okLine :: (Integer, String) -> IO Bool
-okLine nl = do
-  words <- getKeyWords
-  return $ foldl1 (||) $ fmap (flip (isInfixOf) (snd nl)) words
+okLine :: [String] -> (Integer, String) -> IO Bool
+okLine [] _     = return False
+okLine words nl = return $ foldl1 (||) $ fmap (flip (isInfixOf) (snd nl)) words
 -- -----------------------------------------------------
 
 -- Add or not to an the list of lines that will be print
