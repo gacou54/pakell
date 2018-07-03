@@ -1,10 +1,10 @@
 name:                pakell
 version:             0.1.0.0
-github:              "githubuser/pakell"
-license:             BSD3
-author:              "Author name here"
-maintainer:          "example@example.com"
-copyright:           "2018 Author name here"
+github:              "gacou54/pakell"
+license:             MIT
+author:              "Gabriel Couture"
+maintainer:          "gacou54@gmail.com"
+copyright:           "2018 Gabriel Couture"
 
 extra-source-files:
 - README.md
