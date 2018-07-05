@@ -38,12 +38,11 @@ parserMain :: Parser (IO ())
 parserMain = fmap mainSubroutine argRecursiveMain
 
 
-argRecursiveMain :: Parser (Maybe Bool)
-argRecursiveMain = optional (
-                    switch "recursive" 'r' "Look recursivly in directories")
+argRecursiveMain :: Parser (Bool)
+argRecursiveMain = switch "recursive" 'r' "Look recursivly in directories"
 
 
-mainSubroutine :: Maybe Bool -> IO ()
+mainSubroutine :: Bool -> IO ()
 mainSubroutine b = do
   currenPath <- pwd             -- current path
   look Nothing (b, currenPath)  -- look
@@ -61,9 +60,10 @@ parserLf :: Parser (IO ())
 parserLf = fmap lookfor
                   (subcommand "lf" "Alias for look command" argLookfor)
 
-argLookfor :: Parser (Maybe FilePath, Text)
-argLookfor = (,) <$> optional (optPath "path" 'p' "Path to look in")
-                 <*> (argText "Keyword" "Look for the keyword")
+argLookfor :: Parser (Maybe FilePath, Bool, Text)
+argLookfor = (,,) <$> optional (optPath "path" 'p' "Path to look in")
+                  <*> switch "recursive" 'r' "Look recursivly in directories"
+                  <*> (argText "Keyword" "Look for the keyword")
 -- ---------
 
 -- ---------
@@ -75,9 +75,8 @@ parserL :: Parser (IO ())
 parserL = fmap (look Nothing)
                 (subcommand "l" "Alias for look command" argRecursive)
 
-argRecursive :: Parser (Maybe Bool, FilePath)
-argRecursive = (,) <$> optional (
-                        switch "recursive" 'r' "Look recursivly in directories")
+argRecursive :: Parser (Bool, FilePath)
+argRecursive = (,) <$> switch "recursive" 'r' "Look recursivly in directories"
                    <*> (argPath "PATH" "path of file or directory")
 -- ---------
 
@@ -120,15 +119,13 @@ parserVersion = subcommand "version" "Show version" $ pure $ verboseVersion
 -- TODO: implement other cases: allow recursive search with lookfor
 -- look for a specified keyword
 -- -----------------------------------------------------
-lookfor :: (Maybe FilePath, Text) -> IO ()
-lookfor (Nothing, text) = do             -- case with no specified path
-  let s = unpack text                    -- getting string from text
-  currenPath <- pwd                      -- getitng current path
-  look (Just [s]) (Nothing, currenPath)  -- look
+lookfor :: (Maybe FilePath, Bool, Text) -> IO ()
+lookfor (Nothing, b, text) = do              -- case with no specified path
+  currenPath <- pwd                          -- getitng current path
+  look (Just [unpack text]) (b, currenPath)  -- look
 
-lookfor (Just p, text) = do              -- case with specified path
-  let s = unpack text                    -- getting string from text
-  look (Just [s]) (Nothing, p)           -- look
+lookfor (Just p, b, text) = do               -- case with specified path
+  look (Just [unpack text]) (b, p)           -- look
 -- -----------------------------------------------------
 
 
@@ -141,46 +138,11 @@ lookfor (Just p, text) = do              -- case with specified path
 --
 -- look function have 4 case
 -- -----------------------------------------------------
-look :: Maybe [String] -> (Maybe Bool, FilePath) -> IO ()
-look Nothing (Nothing, p) = do  -- case with no specified keyword, no recursive
-  keywords <- getKeyWords       -- getting keywords in config file
-  status   <- stat p            -- getting status
 
-  if (isRegularFile status)
-    then do
-      -- FIXME : some file cannot be read,
-      -- I tried something but not seems to work
-
-      -- getting encoding
-      -- ----------------------------
-      let s    = filePathToString p
-      h        <- openFile s ReadMode
-      encoding <- hGetEncoding h
-      -- ----------------------------
-
-      -- cases were it is possible to parse
-      -- ----------------------------
-      case encoding of
-        Just utf8 -> find' keywords p
-        _         -> return ()
-      -- ----------------------------
-
-    else if (isDirectory status)
-      then do
-        paths       <- shellToList $ ls p  -- getting paths
-        filesStatus <- mapM stat paths     -- getting all status
-
-        -- is files
-        let isFiles = map isRegularFile filesStatus
-
-        -- only files should be marked as True here
-        mapM_ (find'  keywords) $ keep isFiles paths
-
-    else return ()
-
-look Nothing (Just b, p) = do  -- case with no specified words with recursive
-  keywords <- getKeyWords      -- getting keywords
-  status   <- stat p           -- getting status
+look :: Maybe [String] -> (Bool, FilePath) -> IO ()
+look Nothing (b, p) = do   -- case with no specified word
+  keywords <- getKeyWords  -- getting keywords
+  status   <- stat p       -- getting status
 
   if (isRegularFile status)
     then do
@@ -216,11 +178,11 @@ look Nothing (Just b, p) = do  -- case with no specified words with recursive
         mapM_ (find' keywords) $ keep isFiles paths
 
         -- only directories should be marked as True here
-        when b $ mapM_ (\x -> look Nothing (Just b, x)) $ keep isDirs paths
+        when b $ mapM_ (\x -> look Nothing (b, x)) $ keep isDirs paths
 
     else return ()
 
-look word (Nothing, p) = do     -- case specified word and no recursive
+look word (b, p) = do           -- case specified word
   let keyword =  fromJust word  -- getting word
   status      <- stat p         -- getting status
 
@@ -253,6 +215,12 @@ look word (Nothing, p) = do     -- case specified word and no recursive
 
         -- only files should be marked as True here
         mapM_ (find' keyword) $ keep isFiles paths
+
+        -- is directories
+        let isDirs  = map isDirectory filesStatus
+
+        -- only directories should be marked as True here
+        when b $ mapM_ (\x -> look Nothing (b, x)) $ keep isDirs paths
 
     else return ()
 -- -----------------------------------------------------
