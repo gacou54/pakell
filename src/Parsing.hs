@@ -52,15 +52,13 @@ parserLookfor :: Parser (IO ())
 parserLookfor = fmap lookfor
                   (subcommand "lookfor" "Look for specified word" argLookfor)
 
-argLookfor :: Parser (Maybe FilePath, Text)
-argLookfor = (,) <$> optional (optPath "path" 'p' "Path to look in")
-                 <*> (argText "Keyword" "Look for the keyword")
--- ---------
---
--- ---------
 parserLf :: Parser (IO ())
 parserLf = fmap lookfor
                   (subcommand "lf" "Alias for look command" argLookfor)
+
+argLookfor :: Parser (Maybe FilePath, Text)
+argLookfor = (,) <$> optional (optPath "path" 'p' "Path to look in")
+                 <*> (argText "Keyword" "Look for the keyword")
 -- ---------
 
 -- ---------
@@ -68,17 +66,14 @@ parserLook :: Parser (IO ())
 parserLook = fmap (look Nothing)
                   (subcommand "look" "Look for keywords notes" argRecursive)
 
+parserL :: Parser (IO ())
+parserL = fmap (look Nothing)
+                (subcommand "l" "Alias for look command" argRecursive)
+
 argRecursive :: Parser (Maybe Bool, FilePath)
 argRecursive = (,) <$> optional (switch "recursive" 'r' "Look recursivly in directories")
                    <*> (argPath "PATH" "path of file or directory")
 -- ---------
-
--- ---------
-parserL :: Parser (IO ())
-parserL = fmap (look Nothing)
-                (subcommand "l" "Alias for look command" argRecursive)
--- ---------
-
 
 -- ---------
 parserAdd :: Parser (IO ())
@@ -86,7 +81,7 @@ parserAdd = fmap add
                  (subcommand "add" "Add a keyword"
                       (argText "WORD" "Keyword"))
 -- ---------
---
+
 -- ---------
 parserRemove :: Parser (IO ())
 parserRemove = fmap remove
@@ -108,136 +103,15 @@ parserLs = (subcommand "ls" "Alias for list command" (pure listWords))
 parserClear :: Parser (IO ())
 parserClear = (subcommand "clear" "Clear all stored keywords" (pure clear))
 -- ---------
--- ----------------------------------------------
 
-
--- add function
--- Add a keyword into config file
---
--- Parameters
--- -----------
--- Text : keyword to add in config file
--- -----------------------------------------
-add :: Text -> IO ()
-add word = do
-  -- look if word is in config
-  -- -------------------------
-  let wordString = unpack word
-  inConfig <- checkIfInConfig $ wordString
-  -- -------------------------
-
-  case inConfig of
-    True  -> putStrLn "Already a keyword"
-    False -> do
-      pakellConfig <- getConfigPath                       -- getting path
-      current      <- readFile $ fromString pakellConfig  -- getting config
-
-      rm $ fromString pakellConfig  -- delete old config file
-
-      -- create a new one
-      writeFile (fromString pakellConfig) (current++wordString++"\n")
-
-
--- Remove a keyword to remove from config file
---
--- Parameters
--- -----------
--- Text : keyword to remove from config file
--- -----------------------------------------
-remove :: Text -> IO ()
-remove word = do
-  -- look if word is in config
-  let wordString = unpack word
-  inConfig <- checkIfInConfig wordString
-
-  case inConfig of
-    False -> putStrLn "Not a stored keyword"
-    True  -> do
-      pakellConfig <- getConfigPath
-      -- list of String
-      currents     <- readLines pakellConfig
-
-      -- get new list of keyword
-      let news      = filter (\s -> s /= wordString) currents
-
-      rm $ fromString pakellConfig  -- delete old config file
-
-      -- create a new one
-      writeFile (fromString pakellConfig) (listToString news)
--- ----------------------------------------------
-
-
--- ----------------------------------------------
-listWords :: IO ()
-listWords = do
-  -- getting path
-  pakellConfig <- getConfigPath
-  -- getting file content
-  content <- readFile pakellConfig
-  -- print it
-  case content of
-    [] -> putStrLn ""
-    _  -> putStrLn $ init content
--- ----------------------------------------------
-
-
--- ----------------------------------------------
-clear :: IO()
-clear = do
-  -- get config path
-  pakellConfig <- getConfigPath
-  writeFile (fromString pakellConfig) ""
--- ----------------------------------------------
-
-
--- ----------------------------------------------
-getConfigPath :: IO String
-getConfigPath = do
-  homePath <- home
-  let pakellConfig = encodeString homePath ++ "/.config/pakell.conf"
-  return pakellConfig
--- ----------------------------------------------
-
-
--- ----------------------------------------------
-getKeyWords :: IO [String]
-getKeyWords = do
-  -- getting config path
-  pakellConfig <- getConfigPath
-
-  -- read each keayword (one per line)
-  keywords <- readLines pakellConfig
-  return keywords
--- ----------------------------------------------
-
-
--- ----------------------------------------------
-checkIfInConfig :: String -> IO Bool
-checkIfInConfig word = do
-  -- getting each keyword
-  keywords <- getKeyWords
-
-  let x = filter (\s -> s == word) keywords
-  case x of
-    [] -> return False
-    _  -> return True
--- ----------------------------------------------
-
-
--- Version
--- ----------------------------------------------
+-- ---------
 parserVersion :: Parser (IO ())
 parserVersion = subcommand "version" "Show version" $ pure $ verboseVersion
-
-verboseVersion :: IO ()
-verboseVersion = do
-  echo "Version information:"
-  putStrLn $ showVersion version
+-- ---------
 -- ----------------------------------------------
 
 
 -- TODO: implement other cases: allow recursive search with lookfor
--- lookfor function
 -- look for a specified keyword
 -- -----------------------------------------------------
 lookfor :: (Maybe FilePath, Text) -> IO ()
@@ -252,7 +126,6 @@ lookfor (Just p, text) = do              -- case with specified path
 -- -----------------------------------------------------
 
 
--- look function
 -- look into specified path if one of the config keyword
 -- is there
 --
@@ -279,9 +152,12 @@ look Nothing (Nothing, p) = do  -- case with no specified keyword, no recursive
       encoding <- hGetEncoding h
       -- ----------------------------
 
+      -- cases were it is possible to parse
+      -- ----------------------------
       case encoding of
         Just utf8 -> find' keywords p
-        _         -> print ()
+        _         -> return ()
+      -- ----------------------------
 
     else if (isDirectory status)
       then do
@@ -312,9 +188,12 @@ look Nothing (Just b, p) = do  -- case with no specified words with recursive
       encoding <- hGetEncoding h
       -- ----------------------------
 
+      -- cases were it is possible to parse
+      -- ----------------------------
       case encoding of
         Just utf8 -> find' keywords p
-        _         -> print ()
+        _         -> return ()
+      -- ----------------------------
 
     else if (isDirectory status)
       then do
@@ -353,9 +232,12 @@ look word (Nothing, p) = do     -- case specified word and no recursive
       encoding <- hGetEncoding h
       -- ----------------------------
 
+      -- cases were it is possible to parse
+      -- ----------------------------
       case encoding of
         Just utf8 -> find' keyword p
         _         -> return ()
+      -- ----------------------------
 
     else if (isDirectory status)
       then do
@@ -369,8 +251,7 @@ look word (Nothing, p) = do     -- case specified word and no recursive
         mapM_ (find' keyword) $ keep isFiles paths
 
     else return ()
-
-
+-- -----------------------------------------------------
 
 
 -- This is the main "find" function.
@@ -386,7 +267,115 @@ find' keywords p = do
 -- -----------------------------------------------------
 
 
--- keep or not element in list with an associated list of boolean
+-- Add a keyword into config file
+-- -----------------------------------------
+add :: Text -> IO ()
+add word = do
+  -- look if word is in config
+  -- -------------------------
+  let wordString =  unpack word                 -- get String version
+  inConfig       <- checkIfInConfig wordString  -- check in config
+  -- -------------------------
+
+  case inConfig of
+    True  -> putStrLn "Already a keyword"
+    False -> do
+      pakellConfig <- getConfigPath                       -- getting path
+      current      <- readFile $ fromString pakellConfig  -- getting config
+
+      rm $ fromString pakellConfig  -- delete old config file
+
+      -- create a new config file with the added word
+      writeFile (fromString pakellConfig) (current++wordString++"\n")
+-- -----------------------------------------
+
+
+-- Remove a keyword to remove from config file
+-- -----------------------------------------
+remove :: Text -> IO ()
+remove word = do
+  let wordString =  unpack word  -- look if word is in config
+  inConfig       <- checkIfInConfig wordString
+
+  case inConfig of
+    False -> putStrLn "Not a stored keyword"
+    True  -> do
+      pakellConfig <- getConfigPath           -- getting config path
+      currents     <- readLines pakellConfig  -- list of String
+
+      -- get new list of keyword
+      let news     =  filter (\s -> s /= wordString) currents
+
+      rm $ fromString pakellConfig  -- delete old config file
+
+      -- create a new config file without removed word
+      writeFile (fromString pakellConfig) (listToString news)
+-- ----------------------------------------------
+
+
+-- List all keywords in config file
+-- ----------------------------------------------
+listWords :: IO ()
+listWords = do
+  pakellConfig <- getConfigPath     -- getting path
+  content <- readFile pakellConfig  -- getting file content
+
+  -- print it
+  case content of
+    [] -> return ()
+    _  -> putStrLn $ init content
+-- ----------------------------------------------
+
+
+-- Erase all keywords from config file
+-- ----------------------------------------------
+clear :: IO ()
+clear = do
+  pakellConfig <- getConfigPath           -- get config path
+  writeFile (fromString pakellConfig) ""  -- write an empty file
+-- ----------------------------------------------
+
+
+-- Get config file path
+-- ----------------------------------------------
+getConfigPath :: IO String
+getConfigPath = do
+  homePath <- home  -- getitng home path
+
+  -- returning pakell config path
+  return $ encodeString homePath ++ "/.config/pakell.conf"
+-- ----------------------------------------------
+
+
+-- Get keywords in config file
+-- ----------------------------------------------
+getKeyWords :: IO [String]
+getKeyWords = do
+  pakellConfig <- getConfigPath       -- getting config path
+  keywords <- readLines pakellConfig  -- read each keayword (one per line)
+  return keywords                     -- returning keywords
+-- ----------------------------------------------
+
+
+-- Check if keyword is in config
+-- ----------------------------------------------
+checkIfInConfig :: String -> IO Bool
+checkIfInConfig word = do
+  keywords <- getKeyWords  -- getting each keyword
+  return $ foldl1 (||) $ map (\s -> s == word) keywords
+-- ----------------------------------------------
+
+
+-- Version
+-- ----------------------------------------------
+verboseVersion :: IO ()
+verboseVersion = do
+  echo "Version information:"
+  putStrLn $ showVersion version
+-- ----------------------------------------------
+
+
+-- Keep or not element in list with an associated list of boolean
 -- -----------------------------------------------------
 keep :: [Bool] -> [a] -> [a]
 keep [] [x] = error $ "Error: list and associated list of boolean " ++
@@ -438,12 +427,14 @@ readLines :: String -> IO [String]
 readLines = fmap lines . readFile
 -- -----------------------------------------------------
 
+
 -- Check if keywords are in line
 -- -----------------------------------------------------
 okLine :: [String] -> (Integer, String) -> IO Bool
 okLine [] _     = return False
 okLine words nl = return $ foldl1 (||) $ fmap (flip (isInfixOf) (snd nl)) words
 -- -----------------------------------------------------
+
 
 -- Add or not to an the list of lines that will be print
 -- -----------------------------------------------------
@@ -456,12 +447,14 @@ keepLines (b:bs) (nl:nls)
   | otherwise = keepLines bs nls
 -- -----------------------------------------------------
 
--- ascii it, change the display format
+
+-- Ascii it, change the display format
 -- -----------------------------------------------------
 asciiIt :: String -> String
 asciiIt []   = []
 asciiIt word = "\x1b[1m\x1b[38;5;82m" ++ word ++ "\x1b[0m"
 -- -----------------------------------------------------
+
 
 -- replace with combinaison
 -- -----------------------------------------------------
@@ -469,6 +462,7 @@ replaceCombi :: String -> [String] -> [String] -> String
 replaceCombi bigString [w] [a] = replace w a bigString
 replaceCombi bigString (w:ws) (a:as) = replaceCombi (replace w a bigString) ws as
 -- -----------------------------------------------------
+
 
 -- Find word in lines
 -- -----------------------------------------------------
