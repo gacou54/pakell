@@ -41,7 +41,7 @@ mainSubroutine :: IO ()
 mainSubroutine = do
   currenPath <- pwd
   keywords   <- getKeyWords
-  look (Just keywords) currenPath
+  look (Just keywords) (Nothing, currenPath)
 -- ----------------------------------------------
 
 
@@ -65,16 +65,18 @@ parserLf = fmap lookfor
 
 -- ---------
 parserLook :: Parser (IO ())
-parserLook = fmap (look Nothing )
-                  (subcommand "look" "Look for keywords notes"
-                      (argPath "PATH" "path of file or directory"))
+parserLook = fmap (look Nothing)
+                  (subcommand "look" "Look for keywords notes" argRecursive)
+
+argRecursive :: Parser (Maybe Bool, FilePath)
+argRecursive = (,) <$> optional (switch "recursive" 'r' "Look recursivly in directories")
+                   <*> (argPath "PATH" "path of file or directory")
 -- ---------
 
 -- ---------
 parserL :: Parser (IO ())
 parserL = fmap (look Nothing)
-                (subcommand "l" "Alias for look command"
-                  (argPath "PATH" "path of file or directory"))
+                (subcommand "l" "Alias for look command" argRecursive)
 -- ---------
 
 
@@ -106,7 +108,6 @@ parserLs = (subcommand "ls" "Alias for list command" (pure listWords))
 parserClear :: Parser (IO ())
 parserClear = (subcommand "clear" "Clear all stored keywords" (pure clear))
 -- ---------
-
 -- ----------------------------------------------
 
 
@@ -120,27 +121,23 @@ parserClear = (subcommand "clear" "Clear all stored keywords" (pure clear))
 add :: Text -> IO ()
 add word = do
   -- look if word is in config
+  -- -------------------------
   let wordString = unpack word
   inConfig <- checkIfInConfig $ wordString
+  -- -------------------------
 
   case inConfig of
     True  -> putStrLn "Already a keyword"
     False -> do
-      pakellConfig <- getConfigPath
-      current      <- readFile $ fromString pakellConfig
+      pakellConfig <- getConfigPath                       -- getting path
+      current      <- readFile $ fromString pakellConfig  -- getting config
 
-      -- current' (head current == "")
-      --   True  -> tail current
-      --   False -> current
-
-      -- delete old config file
-      rm $ fromString pakellConfig
+      rm $ fromString pakellConfig  -- delete old config file
 
       -- create a new one
       writeFile (fromString pakellConfig) (current++wordString++"\n")
 
---
--- remove function
+
 -- Remove a keyword to remove from config file
 --
 -- Parameters
@@ -163,14 +160,14 @@ remove word = do
       -- get new list of keyword
       let news      = filter (\s -> s /= wordString) currents
 
-      -- delete old config file
-      rm $ fromString pakellConfig
+      rm $ fromString pakellConfig  -- delete old config file
 
       -- create a new one
       writeFile (fromString pakellConfig) (listToString news)
+-- ----------------------------------------------
 
 
-
+-- ----------------------------------------------
 listWords :: IO ()
 listWords = do
   -- getting path
@@ -181,13 +178,17 @@ listWords = do
   case content of
     [] -> putStrLn ""
     _  -> putStrLn $ init content
+-- ----------------------------------------------
 
 
+-- ----------------------------------------------
 clear :: IO()
 clear = do
   -- get config path
   pakellConfig <- getConfigPath
   writeFile (fromString pakellConfig) ""
+-- ----------------------------------------------
+
 
 -- ----------------------------------------------
 getConfigPath :: IO String
@@ -195,8 +196,10 @@ getConfigPath = do
   homePath <- home
   let pakellConfig = encodeString homePath ++ "/.config/pakell.conf"
   return pakellConfig
+-- ----------------------------------------------
 
 
+-- ----------------------------------------------
 getKeyWords :: IO [String]
 getKeyWords = do
   -- getting config path
@@ -205,8 +208,10 @@ getKeyWords = do
   -- read each keayword (one per line)
   keywords <- readLines pakellConfig
   return keywords
+-- ----------------------------------------------
 
 
+-- ----------------------------------------------
 checkIfInConfig :: String -> IO Bool
 checkIfInConfig word = do
   -- getting each keyword
@@ -218,6 +223,7 @@ checkIfInConfig word = do
     _  -> return True
 -- ----------------------------------------------
 
+
 -- Version
 -- ----------------------------------------------
 parserVersion :: Parser (IO ())
@@ -228,27 +234,21 @@ verboseVersion = do
   echo "Version information:"
   putStrLn $ showVersion version
 -- ----------------------------------------------
---
+
+
+-- TODO: implement other cases: allow recursive search with lookfor
 -- lookfor function
 -- look for a specified keyword
 -- -----------------------------------------------------
 lookfor :: (Maybe FilePath, Text) -> IO ()
-lookfor (Nothing, text) = do -- case with no specified path
-  -- getting string from text
-  let s = unpack text
+lookfor (Nothing, text) = do             -- case with no specified path
+  let s = unpack text                    -- getting string from text
+  currenPath <- pwd                      -- getitng current path
+  look (Just [s]) (Nothing, currenPath)  -- look
 
-  -- getitng current path
-  currenPath <- pwd
-
-  -- look
-  look (Just [s]) currenPath
-
-lookfor (Just p, text) = do
-  -- getting string from text
-  let s = unpack text
-
-  -- look
-  look (Just [s]) p
+lookfor (Just p, text) = do              -- case with specified path
+  let s = unpack text                    -- getting string from text
+  look (Just [s]) (Nothing, p)           -- look
 -- -----------------------------------------------------
 
 
@@ -259,21 +259,25 @@ lookfor (Just p, text) = do
 -- Parameters
 -- -----------
 -- FilePath : File path of target file or directory
+--
+-- look function have 4 case
 -- -----------------------------------------------------
-look :: Maybe [String] -> FilePath -> IO ()
-look Nothing p = do
-  keywords <- getKeyWords
+look :: Maybe [String] -> (Maybe Bool, FilePath) -> IO ()
+look Nothing (Nothing, p) = do  -- case with no specified keyword, no recursive
+  keywords <- getKeyWords       -- getting keywords in config file
+  status   <- stat p            -- getting status
 
-  status <- stat p
   if (isRegularFile status)
     then do
       -- FIXME : some file cannot be read,
       -- I tried something but not seems to work
 
       -- getting encoding
+      -- ----------------------------
       let s    = filePathToString p
       h        <- openFile s ReadMode
       encoding <- hGetEncoding h
+      -- ----------------------------
 
       case encoding of
         Just utf8 -> find' keywords p
@@ -281,34 +285,20 @@ look Nothing p = do
 
     else if (isDirectory status)
       then do
-        paths <- shellToList $ ls p
-
-        -- getting all status
-        filesStatus <- mapM stat paths
+        paths       <- shellToList $ ls p  -- getting paths
+        filesStatus <- mapM stat paths     -- getting all status
 
         -- is files
         let isFiles = map isRegularFile filesStatus
 
-        -- is directories
-        let isDirs  = map isDirectory filesStatus
-
         -- only files should be marked as True here
         mapM_ (find'  keywords) $ keep isFiles paths
 
-        -- FIXME : add an option to recursivly parse directories
-        -- (just uncomment below)
-        -- only directories should be markes as True here
-        -- mapM_ look $ keep isDirs paths
+    else return ()
 
-    else do
-      putStrLn "Not a file nor a directory"
-
-look word p = do
-  -- getting word
-  let keyword = fromJust word
-
-  -- getting status
-  status <- stat p
+look Nothing (Just b, p) = do  -- case with no specified words with recursive
+  keywords <- getKeyWords      -- getting keywords
+  status   <- stat p           -- getting status
 
   if (isRegularFile status)
     then do
@@ -316,20 +306,20 @@ look word p = do
       -- I tried something but not seems to work
 
       -- getting encoding
+      -- ----------------------------
       let s    = filePathToString p
       h        <- openFile s ReadMode
       encoding <- hGetEncoding h
+      -- ----------------------------
 
       case encoding of
-        Just utf8 -> find' keyword p
-        _         -> return ()
+        Just utf8 -> find' keywords p
+        _         -> print ()
 
     else if (isDirectory status)
       then do
-        paths <- shellToList $ ls p
-
-        -- getting all status
-        filesStatus <- mapM stat paths
+        paths       <- shellToList $ ls p  -- getting path
+        filesStatus <- mapM stat paths     -- getting all status
 
         -- is files
         let isFiles = map isRegularFile filesStatus
@@ -338,16 +328,62 @@ look word p = do
         let isDirs  = map isDirectory filesStatus
 
         -- only files should be marked as True here
+        mapM_ (find' keywords) $ keep isFiles paths
+
+        -- only directories should be marked as True here
+        when (b) (
+          mapM_ (\x -> look (Just keywords) (Just b, x)) $ keep isDirs paths
+          )
+
+    else return ()
+
+look word (Nothing, p) = do     -- case specified word and no recursive
+  let keyword =  fromJust word  -- getting word
+  status      <- stat p         -- getting status
+
+  if (isRegularFile status)
+    then do
+      -- FIXME : some file cannot be read,
+      -- I tried something but not seems to work
+
+      -- getting encoding
+      -- ----------------------------
+      let s    = filePathToString p
+      h        <- openFile s ReadMode
+      encoding <- hGetEncoding h
+      -- ----------------------------
+
+      case encoding of
+        Just utf8 -> find' keyword p
+        _         -> return ()
+
+    else if (isDirectory status)
+      then do
+        paths       <- shellToList $ ls p  -- getting paths
+        filesStatus <- mapM stat paths     -- getting all status
+
+        -- is files
+        let isFiles = map isRegularFile filesStatus
+
+        -- only files should be marked as True here
         mapM_ (find' keyword) $ keep isFiles paths
 
-        -- FIXME : add an option to recursivly parse directories
-        -- (just uncomment below)
-        -- only directories should be markes as True here
-        -- mapM_ look $ keep isDirs paths
+    else return ()
 
-    else do
-      putStrLn "Not a file nor a directory"
 
+
+
+-- This is the main "find" function.
+-- It takes a String and a FilePath. The function looks
+-- in the file to find occurence of the given String.
+-- If there is, print them in a nice way
+-- -----------------------------------------------------
+find' :: [String] -> FilePath -> IO ()
+find' [] p = return ()
+find' keywords p = do
+  lines' <- readLines $ filePathToString p  -- getting lines
+  printer keywords p lines'                 -- print formated lines
+-- -----------------------------------------------------
 
 
 -- keep or not element in list with an associated list of boolean
@@ -363,20 +399,6 @@ keep [b] [x]
 keep (b:bs) (x:xs)
   | b         = [x] ++ keep bs xs
   | otherwise = keep bs xs
--- -----------------------------------------------------
-
-
--- This is the main "find" function.
--- It takes a String and a FilePath. The function looks
--- in the file to find occurence of the given String.
--- If there is, print them in a nice way
--- -----------------------------------------------------
-find' :: [String] -> FilePath -> IO ()
-find' [] p = return ()
-find' keywords p = do
-
-  lines' <- readLines $ filePathToString p
-  printer keywords p lines'
 -- -----------------------------------------------------
 
 
@@ -402,12 +424,11 @@ printer words p lines' = do
   -- getting a nice string of all lines with the <keyword>
   let s = niceString $ keepLines boolList numberAndLines
 
-   -- list of wor with ascii format for color and bold text
+   -- list of word with ascii format for color and bold text
   let asciiWords = map asciiIt words
 
   when (foldl1 (||) boolList) (
-    -- replace print the result
-    putStrLn $ replaceCombi s words asciiWords )
+    putStrLn $ replaceCombi s words asciiWords ) -- replace print the result
 -- -----------------------------------------------------
 
 
