@@ -35,13 +35,18 @@ import Utils ( filePathToString
 -- Main routine
 -- ----------------------------------------------
 parserMain :: Parser (IO ())
-parserMain = pure mainSubroutine
+parserMain = fmap mainSubroutine argRecursiveMain
 
-mainSubroutine :: IO ()
-mainSubroutine = do
-  currenPath <- pwd
-  keywords   <- getKeyWords
-  look (Just keywords) (Nothing, currenPath)
+
+argRecursiveMain :: Parser (Maybe Bool)
+argRecursiveMain = optional (
+                    switch "recursive" 'r' "Look recursivly in directories")
+
+
+mainSubroutine :: Maybe Bool -> IO ()
+mainSubroutine b = do
+  currenPath <- pwd             -- current path
+  look Nothing (b, currenPath)  -- look
 -- ----------------------------------------------
 
 
@@ -71,7 +76,8 @@ parserL = fmap (look Nothing)
                 (subcommand "l" "Alias for look command" argRecursive)
 
 argRecursive :: Parser (Maybe Bool, FilePath)
-argRecursive = (,) <$> optional (switch "recursive" 'r' "Look recursivly in directories")
+argRecursive = (,) <$> optional (
+                        switch "recursive" 'r' "Look recursivly in directories")
                    <*> (argPath "PATH" "path of file or directory")
 -- ---------
 
@@ -210,9 +216,7 @@ look Nothing (Just b, p) = do  -- case with no specified words with recursive
         mapM_ (find' keywords) $ keep isFiles paths
 
         -- only directories should be marked as True here
-        when (b) (
-          mapM_ (\x -> look (Just keywords) (Just b, x)) $ keep isDirs paths
-          )
+        when b $ mapM_ (\x -> look Nothing (Just b, x)) $ keep isDirs paths
 
     else return ()
 
