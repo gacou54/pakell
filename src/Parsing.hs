@@ -40,14 +40,15 @@ parserMain :: Parser (IO ())
 parserMain = fmap mainSubroutine argRecursiveMain
 
 
-argRecursiveMain :: Parser (Bool)
-argRecursiveMain = switch "recursive" 'r' "Look recursivly in directories"
+argRecursiveMain :: Parser (Bool, Bool)
+argRecursiveMain = (,) <$> switch "recursive" 'r' "Look recursivly in directories"
+                       <*> switch "hidden" 'd' "Also parse hidden file/directory"
 
 
-mainSubroutine :: Bool -> IO ()
-mainSubroutine b = do
-  currenPath <- pwd             -- current path
-  look Nothing (b, currenPath)  -- look
+mainSubroutine :: (Bool, Bool) -> IO ()
+mainSubroutine (r, h) = do
+  currenPath <- pwd                -- current path
+  look Nothing (r, h, currenPath)  -- look
 -- ----------------------------------------------
 
 
@@ -62,10 +63,11 @@ parserLf :: Parser (IO ())
 parserLf = fmap lookfor
                   (subcommand "lf" "Alias for look command" argLookfor)
 
-argLookfor :: Parser (Maybe FilePath, Bool, Text)
-argLookfor = (,,) <$> optional (optPath "path" 'p' "Path to look in")
-                  <*> switch "recursive" 'r' "Look recursivly in directories"
-                  <*> (argText "Keyword" "Look for the keyword")
+argLookfor :: Parser (Maybe FilePath, Bool, Bool, Text)
+argLookfor = (,,,) <$> optional (optPath "path" 'p' "Path to look in")
+                   <*> switch "recursive" 'r' "Look recursivly in directories"
+                   <*> switch "hidden" 'd' "Also parse hidden file/directory"
+                   <*> (argText "Keyword" "Look for the keyword")
 -- ---------
 
 -- ---------
@@ -77,9 +79,10 @@ parserL :: Parser (IO ())
 parserL = fmap (look Nothing)
                 (subcommand "l" "Alias for look command" argRecursive)
 
-argRecursive :: Parser (Bool, FilePath)
-argRecursive = (,) <$> switch "recursive" 'r' "Look recursivly in directories"
-                   <*> (argPath "PATH" "path of file or directory")
+argRecursive :: Parser (Bool, Bool, FilePath)
+argRecursive = (,,) <$> switch "recursive" 'r' "Look recursivly in directories"
+                    <*> switch "hidden" 'd' "Also parse hidden file/directory"
+                    <*> (argPath "PATH" "path of file or directory")
 -- ---------
 
 -- ---------
@@ -120,13 +123,13 @@ parserVersion = subcommand "version" "Show version" $ pure $ verboseVersion
 
 -- look for a specified keyword
 -- -----------------------------------------------------
-lookfor :: (Maybe FilePath, Bool, Text) -> IO ()
-lookfor (Nothing, b, text) = do              -- case with no specified path
-  currenPath <- pwd                          -- getitng current path
-  look (Just [unpack text]) (b, currenPath)  -- look
+lookfor :: (Maybe FilePath, Bool, Bool, Text) -> IO ()
+lookfor (Nothing, r, h, text) = do              -- case with no specified path
+  currenPath <- pwd                             -- getitng current path
+  look (Just [unpack text]) (r, h, currenPath)  -- look
 
-lookfor (Just p, b, text) = do               -- case with specified path
-  look (Just [unpack text]) (b, p)           -- look
+lookfor (Just p, r, h, text) = do               -- case with specified path
+  look (Just [unpack text]) (r, h, p)           -- look
 -- -----------------------------------------------------
 
 
@@ -140,10 +143,10 @@ lookfor (Just p, b, text) = do               -- case with specified path
 -- look function have 4 case
 -- -----------------------------------------------------
 
-look :: Maybe [String] -> (Bool, FilePath) -> IO ()
-look Nothing (b, p) = do   -- case with no specified word
-  keywords <- getKeyWords  -- getting keywords
-  status   <- stat p       -- getting status
+look :: Maybe [String] -> (Bool, Bool, FilePath) -> IO ()
+look Nothing (r, h, p) = do  -- case with no specified word
+  keywords <- getKeyWords    -- getting keywords
+  status   <- stat p         -- getting status
 
   if (isRegularFile status)
     then do
@@ -161,20 +164,27 @@ look Nothing (b, p) = do   -- case with no specified word
         let isDirs  = map isDirectory filesStatus
 
         -- REVIEW: there should be a better way to do that
-        -- pass on hidden path (.<path>)
-        let hidden    = map (\p -> isInfixOf "/." p) $ map filePathToString paths
-        let isOkFiles = map (\(h, f) -> not h && f) $ zip hidden isFiles
-        let isOkDirs  = map (\(h, d) -> not h && d) $ zip hidden isDirs
+        -- must pass the "-d | --hidden" argument
+        -- pass on hidden path (/.<path>)
+        print h
+        let hidden    = map (not h &&) $
+                        map (\p -> isInfixOf "/." p) $ map filePathToString paths
+        let isOkFiles = map (\(h, f) -> not h && f)  $ zip hidden isFiles
+        let isOkDirs  = map (\(h, d) -> not h && d)  $ zip hidden isDirs
 
+        print paths
+        print hidden
+        print isFiles
+        print isOkFiles
         -- only files should be marked as True here
         mapM_ (find' keywords) $ keep isOkFiles paths
 
         -- only directories should be marked as True here
-        when b $ mapM_ (\x -> look Nothing (b, x)) $ keep isOkDirs paths
+        when r $ mapM_ (\x -> look Nothing (r, h, x)) $ keep isOkDirs paths
 
     else return ()
 
-look word (b, p) = do           -- case specified word
+look word (r, h, p) = do        -- case specified word
   let keyword =  fromJust word  -- getting word
   status      <- stat p         -- getting status
 
@@ -195,15 +205,16 @@ look word (b, p) = do           -- case specified word
 
         -- REVIEW: there should be a better way to do that
         -- pass on hidden path (.<path>)
-        let hidden    = map (\p -> isInfixOf "/." p) $ map filePathToString paths
-        let isOkFiles = map (\(f, h) -> f && h) $ zip hidden isFiles
-        let isOkDirs  = map (\(d, h) -> d && h) $ zip hidden isDirs
+        let hidden    = map (h &&) $
+                        map (\p -> isInfixOf "/." p) $ map filePathToString paths
+        let isOkFiles = map (\(h, f) -> not h && f)  $ zip hidden isFiles
+        let isOkDirs  = map (\(h, d) -> not h && d)  $ zip hidden isDirs
 
         -- only files should be marked as True here
         mapM_ (find' keyword) $ keep isOkFiles paths
 
         -- only directories should be marked as True here
-        when b $ mapM_ (\x -> look Nothing (b, x)) $ keep isOkDirs paths
+        when r $ mapM_ (\x -> look Nothing (r, h, x)) $ keep isOkDirs paths
 
     else return ()
 -- -----------------------------------------------------
