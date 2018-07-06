@@ -166,16 +166,11 @@ look Nothing (r, h, p) = do  -- case with no specified word
         -- REVIEW: there should be a better way to do that
         -- must pass the "-d | --hidden" argument
         -- pass on hidden path (/.<path>)
-        print h
         let hidden    = map (not h &&) $
                         map (\p -> isInfixOf "/." p) $ map filePathToString paths
         let isOkFiles = map (\(h, f) -> not h && f)  $ zip hidden isFiles
         let isOkDirs  = map (\(h, d) -> not h && d)  $ zip hidden isDirs
 
-        print paths
-        print hidden
-        print isFiles
-        print isOkFiles
         -- only files should be marked as True here
         mapM_ (find' keywords) $ keep isOkFiles paths
 
@@ -205,7 +200,7 @@ look word (r, h, p) = do        -- case specified word
 
         -- REVIEW: there should be a better way to do that
         -- pass on hidden path (.<path>)
-        let hidden    = map (h &&) $
+        let hidden    = map (not h &&) $
                         map (\p -> isInfixOf "/." p) $ map filePathToString paths
         let isOkFiles = map (\(h, f) -> not h && f)  $ zip hidden isFiles
         let isOkDirs  = map (\(h, d) -> not h && d)  $ zip hidden isDirs
