@@ -24,6 +24,8 @@ import Data.String.Utils (replace)
 import Data.Text (strip, pack, unpack)
 import Data.Version (showVersion)
 import Data.List (isInfixOf)
+import Control.Exception
+import System.IO.Error
 import Turtle
 ----------------
 import Utils ( filePathToString
@@ -116,7 +118,6 @@ parserVersion = subcommand "version" "Show version" $ pure $ verboseVersion
 -- ----------------------------------------------
 
 
--- TODO: implement other cases: allow recursive search with lookfor
 -- look for a specified keyword
 -- -----------------------------------------------------
 lookfor :: (Maybe FilePath, Bool, Text) -> IO ()
@@ -146,22 +147,7 @@ look Nothing (b, p) = do   -- case with no specified word
 
   if (isRegularFile status)
     then do
-      -- FIXME : some file cannot be read,
-      -- I tried something but not seems to work
-
-      -- getting encoding
-      -- ----------------------------
-      let s    = filePathToString p
-      h        <- openFile s ReadMode
-      encoding <- hGetEncoding h
-      -- ----------------------------
-
-      -- cases were it is possible to parse
-      -- ----------------------------
-      case encoding of
-        Just utf8 -> find' keywords p
-        _         -> return ()
-      -- ----------------------------
+      find' keywords p  -- find keyword
 
     else if (isDirectory status)
       then do
@@ -174,11 +160,17 @@ look Nothing (b, p) = do   -- case with no specified word
         -- is directories
         let isDirs  = map isDirectory filesStatus
 
+        -- REVIEW: there should be a better way to do that
+        -- pass on hidden path (.<path>)
+        let hidden    = map (\p -> isInfixOf "/." p) $ map filePathToString paths
+        let isOkFiles = map (\(h, f) -> not h && f) $ zip hidden isFiles
+        let isOkDirs  = map (\(h, d) -> not h && d) $ zip hidden isDirs
+
         -- only files should be marked as True here
-        mapM_ (find' keywords) $ keep isFiles paths
+        mapM_ (find' keywords) $ keep isOkFiles paths
 
         -- only directories should be marked as True here
-        when b $ mapM_ (\x -> look Nothing (b, x)) $ keep isDirs paths
+        when b $ mapM_ (\x -> look Nothing (b, x)) $ keep isOkDirs paths
 
     else return ()
 
@@ -188,22 +180,7 @@ look word (b, p) = do           -- case specified word
 
   if (isRegularFile status)
     then do
-      -- FIXME : some file cannot be read,
-      -- I tried something but not seems to work
-
-      -- getting encoding
-      -- ----------------------------
-      let s    = filePathToString p
-      h        <- openFile s ReadMode
-      encoding <- hGetEncoding h
-      -- ----------------------------
-
-      -- cases were it is possible to parse
-      -- ----------------------------
-      case encoding of
-        Just utf8 -> find' keyword p
-        _         -> return ()
-      -- ----------------------------
+      find' keyword p  -- find keyword
 
     else if (isDirectory status)
       then do
@@ -213,29 +190,48 @@ look word (b, p) = do           -- case specified word
         -- is files
         let isFiles = map isRegularFile filesStatus
 
-        -- only files should be marked as True here
-        mapM_ (find' keyword) $ keep isFiles paths
-
         -- is directories
         let isDirs  = map isDirectory filesStatus
 
+        -- REVIEW: there should be a better way to do that
+        -- pass on hidden path (.<path>)
+        let hidden    = map (\p -> isInfixOf "/." p) $ map filePathToString paths
+        let isOkFiles = map (\(f, h) -> f && h) $ zip hidden isFiles
+        let isOkDirs  = map (\(d, h) -> d && h) $ zip hidden isDirs
+
+        -- only files should be marked as True here
+        mapM_ (find' keyword) $ keep isOkFiles paths
+
         -- only directories should be marked as True here
-        when b $ mapM_ (\x -> look Nothing (b, x)) $ keep isDirs paths
+        when b $ mapM_ (\x -> look Nothing (b, x)) $ keep isOkDirs paths
 
     else return ()
 -- -----------------------------------------------------
 
 
 -- This is the main "find" function.
--- It takes a String and a FilePath. The function looks
--- in the file to find occurence of the given String.
+-- The function looks in the file to find occurence of the given String.
 -- If there is, print them in a nice way
 -- -----------------------------------------------------
 find' :: [String] -> FilePath -> IO ()
-find' [] p = return ()
+find' []       p = return ()
 find' keywords p = do
-  lines' <- readLines $ filePathToString p  -- getting lines
-  printer keywords p lines'                 -- print formated lines
+  -- FIXME : some file cannot be read,
+  -- I tried something but not seems to work
+
+
+  h <- openFile (filePathToString p) ReadMode  -- getting lines
+  hSetEncoding h latin1  -- set encoding
+  fileString  <- hGetContents h
+
+  -- FIXME: This is very bad
+  let lines' = lines fileString
+
+  when ((lines' /= []) && foldl1 (&&) (map (\x -> length x < 400) lines'))
+    (printer keywords p $ lines fileString)  -- print formated lines
+
+  hClose h
+
 -- -----------------------------------------------------
 
 
@@ -350,6 +346,7 @@ verboseVersion = do
 -- Keep or not element in list with an associated list of boolean
 -- -----------------------------------------------------
 keep :: [Bool] -> [a] -> [a]
+keep [] []  = []
 keep [] [x] = error $ "Error: list and associated list of boolean " ++
                       "are not the same length"
 keep [b] [] = error $ "Error: list and associated list of boolean " ++
