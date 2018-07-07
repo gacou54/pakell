@@ -209,7 +209,7 @@ look word (r, h, p) = do        -- case specified word
         mapM_ (find' keyword) $ keep isOkFiles paths
 
         -- only directories should be marked as True here
-        when r $ mapM_ (\x -> look Nothing (r, h, x)) $ keep isOkDirs paths
+        when r $ mapM_ (\x -> look word (r, h, x)) $ keep isOkDirs paths
 
     else return ()
 -- -----------------------------------------------------
