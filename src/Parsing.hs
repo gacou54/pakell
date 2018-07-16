@@ -227,12 +227,12 @@ find' keywords p = do
 
 
   h <- openFile (filePathToString p) ReadMode  -- getting lines
-  hSetEncoding h latin1  -- set encoding
+  hSetEncoding h utf8                          -- set encoding
   fileString  <- hGetContents h
 
-  -- FIXME: This is very bad
   let lines' = lines fileString
 
+  -- FIXME: This is very bad
   when ((lines' /= []) && foldl1 (&&) (map (\x -> length x < 400) lines'))
     (printer keywords p $ lines fileString)  -- print formated lines
 
