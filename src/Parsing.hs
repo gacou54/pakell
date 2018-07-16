@@ -222,22 +222,18 @@ look word (r, h, p) = do        -- case specified word
 find' :: [String] -> FilePath -> IO ()
 find' []       p = return ()
 find' keywords p = do
-  -- FIXME : some file cannot be read,
-  -- I tried something but not seems to work
-
 
   h <- openFile (filePathToString p) ReadMode  -- getting lines
   hSetEncoding h utf8                          -- set encoding
-  fileString  <- hGetContents h
+  fileString  <- hGetContents h                -- get contents
 
-  let lines' = lines fileString
+  -- error handeling while opening files
+  catch (printer keywords p $ lines fileString) handler
+    where
+      handler :: SomeException -> IO ()
+      handler _ = return ()
 
-  -- FIXME: This is very bad
-  when ((lines' /= []) && foldl1 (&&) (map (\x -> length x < 400) lines'))
-    (printer keywords p $ lines fileString)  -- print formated lines
-
-  hClose h
-
+  -- hClose h  -- closing the handler FIXME: don't know why there is an error
 -- -----------------------------------------------------
 
 

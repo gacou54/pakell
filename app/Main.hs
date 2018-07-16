@@ -16,8 +16,6 @@ import Parsing ( parserMain
                , parserLf
                , parserLs )
 
--- TEMP : for testing
--- TODO : test
 
 main :: IO ()
 main = do
