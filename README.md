@@ -1,14 +1,22 @@
 # pakell
 
-This project aims to be a small CLI tool to find some comments notes like
-(FIXME, TODO, etc) into specified file or directory.
+This project aims to be a small CLI tool to find keywords like
+(FIXME, TODO, etc) into specified file or directory. The utilization aims
+to be easy. First you have to add your keywords, then look for them.
+
+
+It is also possible to use pakell as a higher level tool than grep. For example,
+the command "pakell lookfor <aWord>" allow you to find a specific word in
+the current directory, and "pakell lookfor -p <path> <aWord>" to find a
+specific word at a specific path.
+
 
 ## Installation
 
 
 For now, pakell can only be installed with stack. stack is a program for
-developping Haskell project. Look at the stack website for installation
-instruction: https://docs.haskellstack.org/en/stable/README/#how-to-install
+developping Haskell projects. Look at the stack website for installation
+instructions: https://docs.haskellstack.org/en/stable/README/#how-to-install
 
 
 Once stack is installed, you need to clone, build and install pakell :
@@ -23,8 +31,8 @@ Now pakell should be installed :)
 
 ## Utilization
 
-pakell initialize a config file in .config directory, pakell.conf.
-It should be empty the first time. Keywords in there are the ones that
+pakell initialize a config file in the .config directory, pakell.conf.
+It should be empty at the first utilization. Keywords in there are the ones that
 pakell will look for when parsing file/directory.
 
 To add a keyword:
@@ -70,20 +78,25 @@ To remove all keywords:
 $ pakell clear
 ```
 
+Notes
+* You can recursively parse directories with the -r option.
+* Some command don't need a specified path because it parse the current directory, but you can speficy a path with the -p <aPath> option, where <aPath> is your path like home/
+* By default, hidden file/directory are not parsed. But you can allow it by -d option
+
+
+
 ## Example
 
 ![basic example](/imgsExample/basicExample.png)
 
 ### NOTE
 IN DEVELOPMENT.
-* This project has just been started. Also, this is my first Haskell
-project. Once functional, this project will probably have to be reworked.
+* This is a new project and may change. By now pakell works well on my computer, but I have no garanty that it will work everywhere
 
 
 ### TODO
 
 * Add fonctionnalities
-* Correct error about file that can't be open
 * Exception management: I developped this to work on my system.
         I don't know if pakell works well everywhere.
         For example I use a 256 color terminal, which is not the case for
