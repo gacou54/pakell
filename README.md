@@ -1,13 +1,13 @@
 # pakell
 
 This project aims to be a small CLI tool to find keywords like
-(FIXME, TODO, etc) into specified file or directory. The utilization aims
+(`FIXME`, `TODO`, etc) into specified file or directory. The utilization aims
 to be easy. First you have to add your keywords, then look for them.
 
 
 It is also possible to use pakell as a higher level tool than grep. For example,
-the command "pakell lookfor <aWord>" allow you to find a specific word in
-the current directory, and "pakell lookfor -p <path> <aWord>" to find a
+the command `pakell lookfor <aWord>` allow you to find a specific word in
+the current directory, and "pakell lookfor `-p <path> <aWord>` to find a
 specific word at a specific path.
 
 
@@ -79,8 +79,8 @@ $ pakell clear
 ```
 
 Notes
-* You can recursively parse directories with the -r option.
-* Some command don't need a specified path because it parse the current directory, but you can speficy a path with the -p <aPath> option, where <aPath> is your path like home/
+* You can recursively parse directories with the `-r` option.
+* Some command don't need a specified path because it parse the current directory, but you can speficy a path with the `-p <aPath>` option, where `<aPath>` is your path like home/
 * By default, hidden file/directory are not parsed. But you can allow it by -d option
 
 
