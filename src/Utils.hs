@@ -60,17 +60,36 @@ trimWhiteSpaceSuffix xs
 -- -----------------------------------------------------
 niceString :: [(Integer, String)] -> String
 niceString []               = []
-niceString [nl]             = "  \x1b[38;5;3m"         ++
-                              (show $ fst nl)          ++
-                              " :  "                   ++
-                              "\x1b[0m"                ++
-                              trimWhiteSpace (snd nl)  ++ "\n"
-niceString (nl:numAndLines) = "  \x1b[38;5;3m"         ++
-                              (show $ fst nl)          ++
-                              " :  "                   ++
-                              "\x1b[0m"                ++
-                              trimWhiteSpace (snd nl)  ++ "\n" ++
-                              (niceString numAndLines)
+niceString [nl]
+  | length (snd nl) > 400 = "  \x1b[38;5;3m"                     ++
+                            (show $ fst nl)                      ++
+                            " :  "                               ++
+                            "\x1b[0m"                            ++
+                            "Occurence of a keyword was found, " ++
+                            "but the line has "                  ++
+                            "too much characters (>400)" ++  "\n"
+  | otherwise    =          "  \x1b[38;5;3m"         ++
+                            (show $ fst nl)          ++
+                            " :  "                   ++
+                            "\x1b[0m"                ++
+                            trimWhiteSpace (snd nl)  ++ "\n"
+
+niceString (nl:numAndLines)
+  | length (snd nl) > 400 = "  \x1b[38;5;3m"                      ++
+                            (show $ fst nl)                       ++
+                            " :  "                                ++
+                            "\x1b[0m"                             ++
+                            "Occurence of a keyword was found, "  ++
+                            "but the line has "                   ++
+                            "too much characters (>400)"  ++ "\n" ++
+                            (niceString numAndLines)
+  | otherwise    =          "  \x1b[38;5;3m"         ++
+                            (show $ fst nl)          ++
+                            " :  "                   ++
+                            "\x1b[0m"                ++
+                            trimWhiteSpace (snd nl)  ++ "\n" ++
+                            (niceString numAndLines)
+
 -- -----------------------------------------------------
 
 -- To list (form Shell)
