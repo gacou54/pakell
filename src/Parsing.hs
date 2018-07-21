@@ -381,14 +381,15 @@ printer words p lines' = do
                                          "\x1b[0m" )
   when (foldl1 (||) boolList) ( putStrLn "-------------------" )
 
+  -- TODO: add the words in the message when >400 characters
   -- getting a nice string of all lines with the <keyword>
   let s = niceString $ keepLines boolList numberAndLines
 
-   -- list of word with ascii format for color and bold text
+  -- list of word with ascii format for color and bold text
   let asciiWords = map asciiIt words
 
-  when (foldl1 (||) boolList) (
-    putStrLn $ replaceCombi s words asciiWords ) -- replace print the result
+  when (foldl1 (||) boolList)
+    ( putStrLn $ replaceCombi s words asciiWords ) -- replace print the result
 -- -----------------------------------------------------
 
 
